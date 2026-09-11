@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Industrial Machine Health Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at 18% 8%, #133153 0%, #0a1b33 52%, #071226 100%);
+            color: #d8e7fb;
+            min-height: 100vh;
+        }
+        
+        .panel {
+            background: rgba(10, 24, 45, 0.78);
+            border: 1px solid rgba(111, 163, 224, 0.3);
+            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(6px);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .green {
+            background: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+        }
+        
+        .yellow {
+            background: #eab308;
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+        }
+        
+        .red {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.85);
+        }
+        
+        .ecg-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scanline {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.95), transparent);
+            animation: sweep 2.2s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes sweep {
+            0% {
+                left: 0;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-sans p-4 md:p-6">
+    <div class="max-w-[1600px] mx-auto space-y-4">
+        <header class="panel rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-cyan-200 tracking-wide">Industrial Machine Health Monitoring</h1>
+                <p class="text-sm md:text-base text-slate-300 mt-1">Power Loom and Air-Jet Loom Real-Time Monitoring Console</p>
+            </div>
+            <div class="text-sm grid grid-cols-2 gap-2">
+                <div class="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
+                    <p class="text-slate-400">Machine Class</p>
+                    <p class="text-cyan-100">Machine-Agnostic</p>
+                </div>
+                <div class="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
+                    <p class="text-slate-400">Data Source</p>
+                    <p class="text-cyan-100" id="sourceLabel">Connecting...</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+            <div class="xl:col-span-8 panel rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-semibold text-cyan-100">ECG-Style Machine Behavior Waveform</h2>
+                    <p class="text-xs text-slate-400">100 ms refresh</p>
+                </div>
+                <div class="ecg-wrap rounded-xl border border-cyan-900/60 p-2 bg-slate-950/70">
+                    <canvas id="ecgChart" height="130"></canvas>
+                    <div class="scanline"></div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-4 panel rounded-2xl p-4 space-y-3">
+                <h2 class="text-lg font-semibold text-cyan-100">Machine Health Indicator Panel</h2>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+                    <p class="text-xs text-slate-400">Health State</p>
+                    <p id="overallHealth" class="text-2xl font-bold mt-1 text-green-400">Healthy</p>
+                </div>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+                    <p class="text-xs text-slate-400">Health Score</p>
+                    <p id="healthScore" class="text-xl font-semibold mt-1">--</p>
+                </div>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+                    <p class="text-xs text-slate-400 mb-1">Sensor Status</p>
+                    <ul class="text-sm space-y-1">
+                        <li><span class="status-dot green"></span>Temperature: Online</li>
+                        <li><span class="status-dot green"></span>Vibration: Online</li>
+                        <li><span class="status-dot green"></span>Motor Load: Online</li>
+                        <li><span class="status-dot green"></span>RPM: Online</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" id="metricCards"></section>
+
+        <section class="panel rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold text-cyan-100">Live Sensor Graphs</h2>
+                <p class="text-xs text-slate-400">1 second updates</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-2"><canvas id="temperatureChart" height="120"></canvas></div>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-2"><canvas id="vibrationChart" height="120"></canvas></div>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-2"><canvas id="loadChart" height="120"></canvas></div>
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-2"><canvas id="rpmChart" height="120"></canvas></div>
+            </div>
+        </section>
+
+        <section class="panel rounded-2xl p-4">
+            <h2 class="text-lg font-semibold text-cyan-100 mb-3">Fault Detection Alerts</h2>
+            <div id="alerts" class="space-y-2 text-sm"></div>
+        </section>
+    </div>
+
+    <script>
+        const limits = {
+            temperature: {
+                warning: 45,
+                critical: 55,
+                unit: "C"
+            },
+            vibration: {
+                warning: 650,
+                critical: 850,
+                unit: "mm/s"
+            },
+            motor_load: {
+                warning: 700,
+                critical: 850,
+                unit: "A-load"
+            },
+            rpm: {
+                warning: 760,
+                critical: 900,
+                unit: "RPM"
+            },
+        };
+
+        const metricCards = [{
+            key: "temperature",
+            label: "Temperature"
+        }, {
+            key: "vibration",
+            label: "Vibration"
+        }, {
+            key: "motor_load",
+            label: "Motor Load"
+        }, {
+            key: "rpm",
+            label: "RPM"
+        }, ];
+
+        const history = {
+            labels: [],
+            temperature: [],
+            vibration: [],
+            motor_load: [],
+            rpm: [],
+            ecgLabels: [],
+            ecg: [],
+        };
+
+        const maxPoints = 60;
+        const ecgPoints = 120;
+
+        function pushBounded(arr, value, maxLen) {
+            arr.push(value);
+            if (arr.length > maxLen) arr.shift();
+        }
+
+        function level(value, key) {
+            if (value >= limits[key].critical) return "Critical";
+            if (value >= limits[key].warning) return "Warning";
+            return "Healthy";
+        }
+
+        function cardStateClass(state) {
+            if (state === "Critical") return "text-red-400 border-red-700/70";
+            if (state === "Warning") return "text-yellow-300 border-yellow-700/60";
+            return "text-green-400 border-green-700/50";
+        }
+
+        const cardMap = {};
+        const cardWrap = document.getElementById("metricCards");
+        metricCards.forEach((item) => {
+            const card = document.createElement("div");
+            card.className = "panel rounded-xl p-3 border border-slate-700";
+            card.innerHTML = `
+				<p class="text-slate-400 text-xs">${item.label}</p>
+				<p id="val-${item.key}" class="text-xl font-bold mt-1">--</p>
+				<p class="text-xs text-slate-400 mt-1">Warn >= ${limits[item.key].warning} ${limits[item.key].unit} | Critical >= ${limits[item.key].critical} ${limits[item.key].unit}</p>
+			`;
+            cardWrap.appendChild(card);
+            cardMap[item.key] = card;
+        });
+
+        function baseChartOptions(title, color) {
+            return {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: title,
+                        color: "#bae6fd"
+                    },
+                },
+                elements: {
+                    line: {
+                        borderColor: color,
+                        borderWidth: 2,
+                        tension: 0.25
+                    },
+                    point: {
+                        radius: 0
+                    },
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "#94a3b8",
+                            maxTicksLimit: 6
+                        },
+                        grid: {
+                            color: "rgba(148,163,184,0.08)"
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: "#94a3b8"
+                        },
+                        grid: {
+                            color: "rgba(148,163,184,0.08)"
+                        }
+                    },
+                },
+            };
+        }
+
+        function makeLineChart(canvasId, field, title, color) {
+            return {
+                field,
+                chart: new Chart(document.getElementById(canvasId), {
+                    type: "line",
+                    data: {
+                        labels: history.labels,
+                        datasets: [{
+                            data: history[field]
+                        }]
+                    },
+                    options: baseChartOptions(title, color),
+                }),
+            };
+        }
+
+        const charts = [
+            makeLineChart("temperatureChart", "temperature", "Temperature", "#ef4444"),
+            makeLineChart("vibrationChart", "vibration", "Vibration", "#f97316"),
+            makeLineChart("loadChart", "motor_load", "Motor Load", "#22c55e"),
+            makeLineChart("rpmChart", "rpm", "RPM", "#38bdf8"),
+        ];
+
+        const ecgChart = new Chart(document.getElementById("ecgChart"), {
+            type: "line",
+            data: {
+                labels: history.ecgLabels,
+                datasets: [{
+                    data: history.ecg,
+                    borderColor: "#22d3ee",
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.12
+                }],
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        ticks: {
+                            color: "#64748b"
+                        },
+                        grid: {
+                            color: "rgba(100,116,139,0.1)"
+                        }
+                    },
+                },
+            },
+        });
+
+        function detectAnomalies(sample) {
+            const states = {
+                temperature: level(sample.temperature, "temperature"),
+                vibration: level(sample.vibration, "vibration"),
+                motor_load: level(sample.motor_load, "motor_load"),
+                rpm: level(sample.rpm, "rpm"),
+            };
+
+            const overall = Object.values(states).includes("Critical") ?
+                "Critical" :
+                Object.values(states).includes("Warning") ?
+                "Warning" :
+                "Healthy";
+
+            return {
+                states,
+                overall
+            };
+        }
+
+        function renderMetrics(sample, states) {
+            metricCards.forEach((item) => {
+                const val = Number(sample[item.key]);
+                const state = states[item.key];
+                const valEl = document.getElementById(`val-${item.key}`);
+                valEl.textContent = `${val.toFixed(1)} ${limits[item.key].unit}`;
+
+                const css = cardStateClass(state).split(" ");
+                valEl.className = `text-xl font-bold mt-1 ${css[0]}`;
+                cardMap[item.key].className = `panel rounded-xl p-3 border ${css[1]}`;
+            });
+        }
+
+        function renderOverview(sample, overall) {
+            const healthEl = document.getElementById("overallHealth");
+            const scoreEl = document.getElementById("healthScore");
+            healthEl.textContent = overall;
+            healthEl.className = `text-2xl font-bold mt-1 ${overall === "Critical" ? "text-red-400" : overall === "Warning" ? "text-yellow-300" : "text-green-400"}`;
+            scoreEl.textContent = Number(sample.machine_health_score).toFixed(1);
+        }
+
+        function renderAlerts(sample, overall, states) {
+            const alerts = [];
+            if (states.vibration !== "Healthy") alerts.push(`${states.vibration}: High vibration indicates possible bearing or shaft issue.`);
+            if (states.temperature !== "Healthy") alerts.push(`${states.temperature}: High temperature indicates overheating risk.`);
+            if (states.motor_load !== "Healthy") alerts.push(`${states.motor_load}: Abnormal motor load indicates mechanical resistance.`);
+            if (states.rpm !== "Healthy") alerts.push(`${states.rpm}: RPM fluctuation indicates operational instability.`);
+
+            const target = document.getElementById("alerts");
+            if (!alerts.length) {
+                target.innerHTML = `<div class="rounded-lg border border-green-700/50 bg-green-950/20 px-3 py-2 text-green-300">Healthy: No active anomaly alerts.</div>`;
+                return;
+            }
+
+            target.innerHTML = alerts.map((text) => `
+				<div class="rounded-lg border ${overall === "Critical" ? "border-red-700/70 bg-red-950/20 text-red-200" : "border-yellow-700/70 bg-yellow-950/20 text-yellow-200"} px-3 py-2">
+					${text}
+				</div>
+			`).join("");
+        }
+
+        function updateTimeSeries(sample) {
+            const t = new Date().toLocaleTimeString();
+            pushBounded(history.labels, t, maxPoints);
+            pushBounded(history.temperature, Number(sample.temperature), maxPoints);
+            pushBounded(history.vibration, Number(sample.vibration), maxPoints);
+            pushBounded(history.motor_load, Number(sample.motor_load), maxPoints);
+            pushBounded(history.rpm, Number(sample.rpm), maxPoints);
+            charts.forEach((entry) => entry.chart.update("none"));
+        }
+
+        function updateECG(sample) {
+            const phase = Date.now() / 100;
+            const vibNorm = Number(sample.vibration) / limits.vibration.critical;
+            const loadNorm = Number(sample.motor_load) / limits.motor_load.critical;
+            const rpmNorm = Number(sample.rpm) / limits.rpm.critical;
+            const waveform =
+                Math.sin(phase) * 0.5 +
+                Math.sin(phase * 3.5) * (vibNorm > 0.9 ? 0.8 : 0.2) +
+                loadNorm * 0.4 +
+                (rpmNorm - 0.5) * 0.6 +
+                (Math.random() - 0.5) * 0.15;
+
+            pushBounded(history.ecgLabels, "", ecgPoints);
+            pushBounded(history.ecg, waveform, ecgPoints);
+            ecgChart.update("none");
+        }
+
+        function processSample(sample) {
+            const {
+                states,
+                overall
+            } = detectAnomalies(sample);
+            renderMetrics(sample, states);
+            renderOverview(sample, overall);
+            renderAlerts(sample, overall, states);
+            updateTimeSeries(sample);
+            updateECG(sample);
+        }
+
+        function connectStream() {
+            const sourceLabel = document.getElementById("sourceLabel");
+            const source = new EventSource("/stream");
+
+            source.onopen = () => {
+                sourceLabel.textContent = "CSV stream: machine_health_data.csv";
+            };
+
+            source.onmessage = (event) => {
+                const sample = JSON.parse(event.data);
+                processSample(sample);
+            };
+
+            source.onerror = () => {
+                sourceLabel.textContent = "Disconnected. Retrying...";
+            };
+        }
+
+        connectStream();
+    </script>
+</body>
+
+</html>

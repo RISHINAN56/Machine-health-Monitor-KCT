@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-industrial-950 text-slate-100 font-sans;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 38, 74, 0.4), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(6, 182, 212, 0.08), transparent);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism & Cyber SCADA Panels */
+.glass-panel {
+  background: rgba(11, 18, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(39, 59, 104, 0.45);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-interactive {
+  background: rgba(11, 18, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(39, 59, 104, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: rgba(16, 26, 48, 0.88);
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 10px 36px -4px rgba(0, 240, 255, 0.15);
+}
+
+.glass-panel-accent {
+  background: linear-gradient(135deg, rgba(16, 26, 48, 0.8) 0%, rgba(7, 12, 23, 0.9) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+}
+
+/* Glow Text */
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.65), 0 0 20px rgba(0, 240, 255, 0.25);
+}
+
+.text-glow-emerald {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.65), 0 0 20px rgba(16, 185, 129, 0.25);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.65), 0 0 20px rgba(245, 158, 11, 0.25);
+}
+
+.text-glow-crimson {
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.75), 0 0 24px rgba(239, 68, 68, 0.35);
+}
+
+/* CRT Scanline effect */
+.crt-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070c17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1a2849;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff;
+}
