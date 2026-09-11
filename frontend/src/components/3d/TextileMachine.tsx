@@ -5,47 +5,70 @@ import { useTwin } from "../../context/TwinContext";
 import { Html } from "@react-three/drei";
 
 export const TextileMachine: React.FC = () => {
-  const { telemetry, selectedComponent, setSelectedComponent, wireframeMode } = useTwin();
+  const { displayTelemetry, selectedComponent, setSelectedComponent, wireframeMode, viewportMode } = useTwin();
 
   // References for dynamic animated sub-assemblies
   const machineRootRef = useRef<THREE.Group>(null);
   const motorShaftRef = useRef<THREE.Group>(null);
   const coolingFanRef = useRef<THREE.Group>(null);
   const driveShaftRef = useRef<THREE.Group>(null);
-  const beltPulley1Ref = useRef<THREE.Group>(null);
+  const beltPulley1Ref = useRef<THREE.Mesh>(null);
   const beltPulley2Ref = useRef<THREE.Group>(null);
   const loomHealdFrameRef = useRef<THREE.Group>(null);
   const loomReedRef = useRef<THREE.Group>(null);
 
-  const rpm = telemetry?.sensors.rpm || 0;
-  const vibration = telemetry?.sensors.vibration || 0;
+  const telemetry = displayTelemetry;
+  const rpm = telemetry?.sensors?.rpm ?? 0;
+  const vibration = telemetry?.sensors?.vibration ?? 0;
   const healthScore = telemetry?.overall_health_score ?? 100;
   const componentsHealth = telemetry?.components;
+
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation();
+    document.body.style.cursor = "pointer";
+  };
+
+  const handlePointerOut = () => {
+    document.body.style.cursor = "auto";
+  };
+
+  // Thermal Heat Map gradient color calculator
+  const getThermalColor = (temp: number) => {
+    if (temp < 35) return "#0284c7"; // Cool Blue
+    if (temp < 48) return "#10b981"; // Normal Green
+    if (temp < 62) return "#f59e0b"; // Warm Amber
+    return "#ef4444"; // Hot Red
+  };
 
   // Animation Loop (60 FPS)
   useFrame((state, delta) => {
     // 1. Rotation speed derived from real-time RPM
-    // 600 RPM = 10 rev/sec = 20 * PI rad/sec
     const angularSpeed = (rpm / 60) * Math.PI * 2 * delta;
 
     if (motorShaftRef.current) motorShaftRef.current.rotation.x += angularSpeed;
     if (coolingFanRef.current) coolingFanRef.current.rotation.x += angularSpeed * 1.5;
     if (driveShaftRef.current) driveShaftRef.current.rotation.x += angularSpeed;
-    if (beltPulley1Ref.current) beltPulley1Ref.current.rotation.x += angularSpeed;
     if (beltPulley2Ref.current) beltPulley2Ref.current.rotation.x += angularSpeed * 0.85;
 
     // 2. Loom Beat-Up Motion (Reciprocating back & forth)
-    if (loomHealdFrameRef.current && rpm > 20) {
-      const beatCycle = state.clock.getElapsedTime() * (rpm / 60) * Math.PI * 2;
-      loomHealdFrameRef.current.position.y = 1.05 + Math.sin(beatCycle) * 0.12;
-      if (loomReedRef.current) {
-        loomReedRef.current.position.z = -0.15 + Math.cos(beatCycle) * 0.22;
-        loomReedRef.current.rotation.x = Math.sin(beatCycle) * 0.15;
+    if (loomHealdFrameRef.current) {
+      if (rpm > 20) {
+        const beatCycle = state.clock.getElapsedTime() * (rpm / 60) * Math.PI * 2;
+        loomHealdFrameRef.current.position.y = 1.05 + Math.sin(beatCycle) * 0.12;
+        if (loomReedRef.current) {
+          loomReedRef.current.position.z = -0.15 + Math.cos(beatCycle) * 0.22;
+          loomReedRef.current.rotation.x = Math.sin(beatCycle) * 0.15;
+        }
+      } else {
+        loomHealdFrameRef.current.position.y = 1.05;
+        if (loomReedRef.current) {
+          loomReedRef.current.position.z = -0.15;
+          loomReedRef.current.rotation.x = 0;
+        }
       }
     }
 
     // 3. Vibration Shaking Simulation
-    // When vibration rises past 450 mm/s, add high-frequency displacement jitter
     if (machineRootRef.current) {
       if (vibration > 300) {
         const jitterIntensity = Math.min(0.045, ((vibration - 300) / 1000) * 0.035);
@@ -59,15 +82,55 @@ export const TextileMachine: React.FC = () => {
     }
   });
 
-  // Color selection helper
-  const getGlowColor = (compKey: string) => {
-    if (componentsHealth && componentsHealth[compKey]) {
-      return componentsHealth[compKey].glow_color;
+  // Dynamic visual material properties helper for component states
+  const getComponentVisuals = (compKey: string, defaultColor: string) => {
+    const comp = componentsHealth ? componentsHealth[compKey] : null;
+    const isCompSelected = selectedComponent === compKey;
+    const isFailing = comp?.is_failing || (comp?.health_score !== undefined && comp.health_score < 50);
+    const temp = comp?.temperature ?? telemetry?.sensors?.temperature ?? 32;
+
+    if (viewportMode === "thermal") {
+      const thermalColor = getThermalColor(temp);
+      return {
+        color: thermalColor,
+        emissive: thermalColor,
+        emissiveIntensity: 0.65,
+        wireframe: false,
+      };
     }
-    return healthScore > 75 ? "#10b981" : healthScore > 50 ? "#f59e0b" : "#ef4444";
+
+    if (isFailing) {
+      // Flashing Red 3D failure state (Phase 1)
+      return {
+        color: "#dc2626",
+        emissive: "#ef4444",
+        emissiveIntensity: 0.85,
+        wireframe: wireframeMode,
+      };
+    }
+
+    const glow = comp?.glow_color ?? (healthScore > 75 ? "#10b981" : healthScore > 50 ? "#f59e0b" : "#ef4444");
+
+    return {
+      color: isCompSelected ? "#38bdf8" : defaultColor,
+      emissive: glow,
+      emissiveIntensity: isCompSelected ? 0.75 : 0.22,
+      wireframe: wireframeMode,
+    };
   };
 
   const isSelected = (compKey: string) => selectedComponent === compKey;
+
+  const motorTemp = (telemetry?.sensors?.temperature ?? 0).toFixed(1);
+  const motorLoad = (telemetry?.sensors?.motor_load ?? 0).toFixed(0);
+  const bearingVib = (telemetry?.sensors?.vibration ?? 0).toFixed(1);
+
+  const motorVis = getComponentVisuals("main_motor", "#25344d");
+  const beltVis = getComponentVisuals("belt_system", "#64748b");
+  const shaftVis = getComponentVisuals("drive_shaft", "#cbd5e1");
+  const bearingVis = getComponentVisuals("bearings", "#1e293b");
+  const loomVis = getComponentVisuals("loom_section", "#475569");
+  const powerVis = getComponentVisuals("power_unit", "#1e293b");
 
   return (
     <group ref={machineRootRef} position={[0, 0, 0]}>
@@ -87,7 +150,7 @@ export const TextileMachine: React.FC = () => {
         </mesh>
 
         {/* Safety Hazard Stripes On Front Edge */}
-        <mesh position={[0, 0.301, 0.95]}>
+        <mesh position={[0, 0.301, 0.95]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[4.2, 0.08]} />
           <meshBasicMaterial color="#eab308" />
         </mesh>
@@ -118,6 +181,8 @@ export const TextileMachine: React.FC = () => {
       {/* ========================================================= */}
       <group
         position={[-1.3, 0.75, 0.55]}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("main_motor") ? null : "main_motor");
@@ -127,12 +192,12 @@ export const TextileMachine: React.FC = () => {
         <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.34, 0.34, 0.85, 24]} />
           <meshStandardMaterial
-            color={isSelected("main_motor") ? "#38bdf8" : "#25344d"}
-            emissive={getGlowColor("main_motor")}
-            emissiveIntensity={isSelected("main_motor") ? 0.7 : 0.25}
+            color={motorVis.color}
+            emissive={motorVis.emissive}
+            emissiveIntensity={motorVis.emissiveIntensity}
             roughness={0.4}
             metalness={0.8}
-            wireframe={wireframeMode}
+            wireframe={motorVis.wireframe}
           />
         </mesh>
 
@@ -140,27 +205,36 @@ export const TextileMachine: React.FC = () => {
         {[-0.3, -0.15, 0, 0.15, 0.3].map((off, i) => (
           <mesh key={i} position={[off, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.37, 0.37, 0.025, 24]} />
-            <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.3} />
+            <meshStandardMaterial
+              color={viewportMode === "thermal" ? motorVis.color : "#1e293b"}
+              metalness={0.9}
+              roughness={0.3}
+              wireframe={wireframeMode}
+            />
           </mesh>
         ))}
 
         {/* Motor Terminal / Junction Box */}
         <mesh position={[0, 0.38, 0]} castShadow>
           <boxGeometry args={[0.28, 0.18, 0.22]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.5} />
+          <meshStandardMaterial
+            color={viewportMode === "thermal" ? motorVis.color : "#0f172a"}
+            roughness={0.5}
+            wireframe={wireframeMode}
+          />
         </mesh>
 
         {/* Motor Shaft & Pulley Hub */}
         <group ref={motorShaftRef} position={[0.48, 0, 0]}>
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
             <cylinderGeometry args={[0.065, 0.065, 0.22, 16]} />
-            <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.15} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.15} wireframe={wireframeMode} />
           </mesh>
           {/* Drive Pulley */}
           <mesh ref={beltPulley1Ref} position={[0.06, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
             <cylinderGeometry args={[0.18, 0.18, 0.08, 24]} />
             <meshStandardMaterial
-              color="#475569"
+              color={viewportMode === "thermal" ? beltVis.color : "#475569"}
               metalness={0.85}
               roughness={0.3}
               wireframe={wireframeMode}
@@ -172,23 +246,32 @@ export const TextileMachine: React.FC = () => {
         <group position={[-0.48, 0, 0]}>
           <mesh rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.33, 0.33, 0.15, 24]} />
-            <meshStandardMaterial color="#0284c7" metalness={0.6} roughness={0.4} />
+            <meshStandardMaterial
+              color={viewportMode === "thermal" ? motorVis.color : "#0284c7"}
+              metalness={0.6}
+              roughness={0.4}
+              wireframe={wireframeMode}
+            />
           </mesh>
           <group ref={coolingFanRef}>
             {[0, 60, 120, 180, 240, 300].map((deg) => (
               <mesh key={deg} rotation={[THREE.MathUtils.degToRad(deg), 0, 0]}>
                 <boxGeometry args={[0.02, 0.26, 0.06]} />
-                <meshStandardMaterial color="#38bdf8" />
+                <meshStandardMaterial color={viewportMode === "thermal" ? motorVis.color : "#38bdf8"} wireframe={wireframeMode} />
               </mesh>
             ))}
           </group>
         </group>
 
         {/* Floating Live 3D Badge */}
-        {isSelected("main_motor") && (
-          <Html position={[0, 0.65, 0]} center distanceFactor={8}>
-            <div className="bg-industrial-900/90 text-cyan-200 border border-cyan-400/80 px-2 py-1 rounded shadow-glow-cyan text-xs font-hud whitespace-nowrap pointer-events-none">
-              MOTOR: {telemetry?.sensors.temperature.toFixed(1)}°C | LOAD: {telemetry?.sensors.motor_load.toFixed(0)}A
+        {(isSelected("main_motor") || componentsHealth?.["main_motor"]?.is_failing) && (
+          <Html position={[0, 0.65, 0]} center style={{ pointerEvents: "none" }}>
+            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["main_motor"]?.is_failing
+                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
+                : "bg-industrial-900/90 text-cyan-200 border border-cyan-400/80 shadow-glow-cyan"
+              }`}>
+              {componentsHealth?.["main_motor"]?.is_failing ? "⚠️ MOTOR OVERLOAD FAILURE | " : "MOTOR | "}
+              {motorTemp}°C | {motorLoad}A | RUL: {componentsHealth?.["main_motor"]?.remaining_useful_life_days ?? 45}d
             </div>
           </Html>
         )}
@@ -199,6 +282,8 @@ export const TextileMachine: React.FC = () => {
       {/* ========================================================= */}
       <group
         position={[-0.65, 0.95, 0.55]}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("belt_system") ? null : "belt_system");
@@ -209,12 +294,12 @@ export const TextileMachine: React.FC = () => {
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
             <cylinderGeometry args={[0.26, 0.26, 0.08, 24]} />
             <meshStandardMaterial
-              color="#64748b"
-              emissive={getGlowColor("belt_system")}
-              emissiveIntensity={isSelected("belt_system") ? 0.6 : 0.2}
+              color={beltVis.color}
+              emissive={beltVis.emissive}
+              emissiveIntensity={beltVis.emissiveIntensity}
               metalness={0.8}
               roughness={0.3}
-              wireframe={wireframeMode}
+              wireframe={beltVis.wireframe}
             />
           </mesh>
         </group>
@@ -223,27 +308,46 @@ export const TextileMachine: React.FC = () => {
         <mesh position={[-0.08, 0.05, 0]} rotation={[0, 0, 0.45]}>
           <boxGeometry args={[0.04, 0.95, 0.07]} />
           <meshStandardMaterial
-            color="#0f172a"
+            color={beltVis.color}
             roughness={0.8}
-            emissive={getGlowColor("belt_system")}
-            emissiveIntensity={isSelected("belt_system") ? 0.5 : 0.1}
+            emissive={beltVis.emissive}
+            emissiveIntensity={beltVis.emissiveIntensity}
+            wireframe={beltVis.wireframe}
           />
         </mesh>
         <mesh position={[0.08, 0.05, 0]} rotation={[0, 0, -0.45]}>
           <boxGeometry args={[0.04, 0.95, 0.07]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.8} />
+          <meshStandardMaterial
+            color={beltVis.color}
+            roughness={0.8}
+            emissive={beltVis.emissive}
+            emissiveIntensity={beltVis.emissiveIntensity * 0.7}
+            wireframe={beltVis.wireframe}
+          />
         </mesh>
 
         {/* Belt Tension Guard Shell */}
         <mesh position={[0, 0.05, 0]}>
           <boxGeometry args={[0.32, 1.15, 0.16]} />
           <meshStandardMaterial
-            color="#38bdf8"
+            color={viewportMode === "thermal" ? beltVis.color : "#38bdf8"}
             transparent
             opacity={wireframeMode ? 0.8 : 0.18}
             wireframe={wireframeMode}
           />
         </mesh>
+
+        {(isSelected("belt_system") || componentsHealth?.["belt_system"]?.is_failing) && (
+          <Html position={[0, 0.7, 0]} center style={{ pointerEvents: "none" }}>
+            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["belt_system"]?.is_failing
+                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
+                : "bg-industrial-900/90 text-cyan-200 border border-cyan-400"
+              }`}>
+              {componentsHealth?.["belt_system"]?.is_failing ? "⚠️ BELT SLIPPAGE | " : "BELT DRIVE | "}
+              STRESS: {componentsHealth?.["belt_system"]?.stress_level ?? 25}%
+            </div>
+          </Html>
+        )}
       </group>
 
       {/* ========================================================= */}
@@ -251,16 +355,25 @@ export const TextileMachine: React.FC = () => {
       {/* ========================================================= */}
       <group position={[0, 1.4, 0.55]}>
         {/* Rotating Stainless Steel Drive Shaft */}
-        <group ref={driveShaftRef} position={[0, 0, 0]}>
+        <group
+          ref={driveShaftRef}
+          position={[0, 0, 0]}
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedComponent(isSelected("drive_shaft") ? null : "drive_shaft");
+          }}
+        >
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
             <cylinderGeometry args={[0.055, 0.055, 3.5, 24]} />
             <meshStandardMaterial
-              color={isSelected("drive_shaft") ? "#38bdf8" : "#cbd5e1"}
-              emissive={getGlowColor("drive_shaft")}
-              emissiveIntensity={isSelected("drive_shaft") ? 0.7 : 0.2}
+              color={shaftVis.color}
+              emissive={shaftVis.emissive}
+              emissiveIntensity={shaftVis.emissiveIntensity}
               metalness={0.95}
               roughness={0.15}
-              wireframe={wireframeMode}
+              wireframe={shaftVis.wireframe}
             />
           </mesh>
 
@@ -268,7 +381,12 @@ export const TextileMachine: React.FC = () => {
           {[-1.0, -0.3, 0.3, 1.0].map((pos, idx) => (
             <mesh key={idx} position={[pos, 0.03, 0]} rotation={[0, 0, Math.PI / 2]}>
               <cylinderGeometry args={[0.11, 0.11, 0.06, 16]} />
-              <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.3} />
+              <meshStandardMaterial
+                color={viewportMode === "thermal" ? shaftVis.color : "#475569"}
+                metalness={0.8}
+                roughness={0.3}
+                wireframe={wireframeMode}
+              />
             </mesh>
           ))}
         </group>
@@ -278,6 +396,8 @@ export const TextileMachine: React.FC = () => {
           <group
             key={idx}
             position={[xPos, 0, 0]}
+            onPointerOver={handlePointerOver}
+            onPointerOut={handlePointerOut}
             onClick={(e) => {
               e.stopPropagation();
               setSelectedComponent(isSelected("bearings") ? null : "bearings");
@@ -287,12 +407,12 @@ export const TextileMachine: React.FC = () => {
             <mesh castShadow>
               <boxGeometry args={[0.18, 0.26, 0.22]} />
               <meshStandardMaterial
-                color={isSelected("bearings") ? "#38bdf8" : "#1e293b"}
-                emissive={getGlowColor("bearings")}
-                emissiveIntensity={isSelected("bearings") ? 0.8 : 0.35}
+                color={bearingVis.color}
+                emissive={bearingVis.emissive}
+                emissiveIntensity={bearingVis.emissiveIntensity}
                 roughness={0.5}
                 metalness={0.7}
-                wireframe={wireframeMode}
+                wireframe={bearingVis.wireframe}
               />
             </mesh>
             {/* Grease Nipple / Lubrication Port */}
@@ -304,10 +424,14 @@ export const TextileMachine: React.FC = () => {
         ))}
 
         {/* Floating Bearing HUD Badge */}
-        {isSelected("bearings") && (
-          <Html position={[0.55, 0.45, 0]} center distanceFactor={8}>
-            <div className="bg-industrial-900/90 text-amber-300 border border-amber-400 px-2 py-1 rounded shadow-glow-amber text-xs font-hud whitespace-nowrap pointer-events-none">
-              BEARINGS: {telemetry?.sensors.vibration.toFixed(1)} mm/s RMS (ISO 10816)
+        {(isSelected("bearings") || componentsHealth?.["bearings"]?.is_failing) && (
+          <Html position={[0.55, 0.45, 0]} center style={{ pointerEvents: "none" }}>
+            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["bearings"]?.is_failing
+                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
+                : "bg-industrial-900/90 text-amber-300 border border-amber-400 shadow-glow-amber"
+              }`}>
+              {componentsHealth?.["bearings"]?.is_failing ? "⚠️ CRITICAL BEARING WEAR | " : "BEARINGS | "}
+              {bearingVib} mm/s RMS | RUL: {componentsHealth?.["bearings"]?.remaining_useful_life_days ?? 60}d
             </div>
           </Html>
         )}
@@ -318,6 +442,8 @@ export const TextileMachine: React.FC = () => {
       {/* ========================================================= */}
       <group
         position={[0, 0, 0]}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("loom_section") ? null : "loom_section");
@@ -329,10 +455,10 @@ export const TextileMachine: React.FC = () => {
             <mesh key={idx} position={[0, 0, zOffset]} castShadow>
               <boxGeometry args={[2.8, 0.75, 0.03]} />
               <meshStandardMaterial
-                color={isSelected("loom_section") ? "#38bdf8" : "#475569"}
-                emissive={getGlowColor("loom_section")}
-                emissiveIntensity={isSelected("loom_section") ? 0.6 : 0.2}
-                wireframe={wireframeMode}
+                color={loomVis.color}
+                emissive={loomVis.emissive}
+                emissiveIntensity={loomVis.emissiveIntensity}
+                wireframe={loomVis.wireframe}
               />
             </mesh>
           ))}
@@ -344,6 +470,7 @@ export const TextileMachine: React.FC = () => {
               transparent
               opacity={0.35}
               wireframe={wireframeMode}
+              side={THREE.DoubleSide}
             />
           </mesh>
         </group>
@@ -353,13 +480,18 @@ export const TextileMachine: React.FC = () => {
           {/* Sley Beam */}
           <mesh position={[0, 0, 0]} castShadow>
             <boxGeometry args={[2.9, 0.12, 0.16]} />
-            <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.7} />
+            <meshStandardMaterial
+              color={viewportMode === "thermal" ? loomVis.color : "#334155"}
+              roughness={0.4}
+              metalness={0.7}
+              wireframe={wireframeMode}
+            />
           </mesh>
           {/* Steel Reed Comb */}
           <mesh position={[0, 0.22, 0]} castShadow>
             <boxGeometry args={[2.8, 0.32, 0.02]} />
             <meshStandardMaterial
-              color="#cbd5e1"
+              color={viewportMode === "thermal" ? loomVis.color : "#cbd5e1"}
               metalness={0.9}
               roughness={0.2}
               wireframe={wireframeMode}
@@ -370,13 +502,13 @@ export const TextileMachine: React.FC = () => {
         {/* Warp Yarn Beam (Back of machine) */}
         <mesh position={[0, 0.75, -0.75]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[0.32, 0.32, 2.9, 24]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.9} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.9} wireframe={wireframeMode} />
         </mesh>
 
         {/* Woven Fabric Cloth Roll (Front of machine) */}
         <mesh position={[0, 0.55, 0.75]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[0.24, 0.24, 2.8, 24]} />
-          <meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+          <meshStandardMaterial color="#e2e8f0" roughness={0.8} wireframe={wireframeMode} />
         </mesh>
       </group>
 
@@ -385,6 +517,8 @@ export const TextileMachine: React.FC = () => {
       {/* ========================================================= */}
       <group
         position={[1.55, 0.95, -0.55]}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("power_unit") ? null : "power_unit");
@@ -393,19 +527,19 @@ export const TextileMachine: React.FC = () => {
         <mesh castShadow>
           <boxGeometry args={[0.55, 1.1, 0.65]} />
           <meshStandardMaterial
-            color={isSelected("power_unit") ? "#38bdf8" : "#1e293b"}
-            emissive={getGlowColor("power_unit")}
-            emissiveIntensity={isSelected("power_unit") ? 0.7 : 0.2}
+            color={powerVis.color}
+            emissive={powerVis.emissive}
+            emissiveIntensity={powerVis.emissiveIntensity}
             roughness={0.3}
             metalness={0.75}
-            wireframe={wireframeMode}
+            wireframe={powerVis.wireframe}
           />
         </mesh>
 
         {/* Cabinet Door Seam & Vent Grills */}
-        <mesh position={[0.28, 0, 0]}>
+        <mesh position={[0.28, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
           <planeGeometry args={[0.6, 0.95]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.6} />
+          <meshStandardMaterial color="#0f172a" roughness={0.6} side={THREE.DoubleSide} wireframe={wireframeMode} />
         </mesh>
 
         {/* Live Status Pilot Lights (Green / Amber / Red LEDs) */}

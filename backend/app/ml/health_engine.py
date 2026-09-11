@@ -156,48 +156,93 @@ class HealthScoreEngine:
     ) -> Dict[str, ComponentHealth]:
         comps = {}
 
-        # 1. Main Motor: Affected by Motor Load & Temperature
+        # 1. Main Motor: Nominal lifetime ~260 days
         motor_score = round(load_s * 0.55 + temp_s * 0.35 + vib_s * 0.1, 2)
-        comps["main_motor"] = self._build_comp("Main Motor", motor_score, sensors.temperature + 4.2, sensors.vibration * 0.6)
+        comps["main_motor"] = self._build_comp(
+            "Main Motor", motor_score, sensors.temperature + 4.2, sensors.vibration * 0.6, base_life_days=260.0
+        )
 
-        # 2. Drive Shaft: Affected by RPM stability & Vibration
+        # 2. Drive Shaft: Nominal lifetime ~480 days
         shaft_score = round(rpm_s * 0.45 + vib_s * 0.45 + load_s * 0.1, 2)
-        comps["drive_shaft"] = self._build_comp("Drive Shaft", shaft_score, sensors.temperature * 0.9, sensors.vibration * 0.85)
+        comps["drive_shaft"] = self._build_comp(
+            "Drive Shaft", shaft_score, sensors.temperature * 0.9, sensors.vibration * 0.85, base_life_days=480.0
+        )
 
-        # 3. Bearings: Highly sensitive to Vibration and localized thermal friction
+        # 3. Bearings: Highly sensitive to Vibration. Nominal lifetime ~140 days
         bearing_score = round(vib_s * 0.70 + temp_s * 0.30, 2)
-        comps["bearings"] = self._build_comp("Bearings", bearing_score, sensors.temperature + 6.8, sensors.vibration * 1.15)
+        comps["bearings"] = self._build_comp(
+            "Bearing System", bearing_score, sensors.temperature + 6.8, sensors.vibration * 1.15, base_life_days=140.0
+        )
 
-        # 4. Belt System: Affected by RPM slippage & Motor Load
+        # 4. Belt System: Nominal lifetime ~45 days
         belt_score = round(rpm_s * 0.60 + load_s * 0.40, 2)
-        comps["belt_system"] = self._build_comp("Belt System", belt_score, sensors.temperature * 0.85, sensors.vibration * 0.5)
+        comps["belt_system"] = self._build_comp(
+            "Belt Drive", belt_score, sensors.temperature * 0.85, sensors.vibration * 0.5, base_life_days=45.0
+        )
 
-        # 5. Loom Section: Reciprocating heald frames & reed (vibration + load)
+        # 5. Loom Section: Reciprocating heald frames & reed. Nominal lifetime ~210 days
         loom_score = round(vib_s * 0.45 + load_s * 0.35 + rpm_s * 0.20, 2)
-        comps["loom_section"] = self._build_comp("Loom Section", loom_score, sensors.temperature * 0.88, sensors.vibration * 0.95)
+        comps["loom_section"] = self._build_comp(
+            "Loom Section", loom_score, sensors.temperature * 0.88, sensors.vibration * 0.95, base_life_days=210.0
+        )
 
-        # 6. Power Unit & Inverter: Electrical and load stress
+        # 6. Power Unit & Inverter: Electrical and load stress. Nominal lifetime ~800 days
         power_score = round(load_s * 0.65 + temp_s * 0.35, 2)
-        comps["power_unit"] = self._build_comp("Power Unit", power_score, sensors.temperature + 1.5, sensors.vibration * 0.2)
+        comps["power_unit"] = self._build_comp(
+            "Power Unit", power_score, sensors.temperature + 1.5, sensors.vibration * 0.2, base_life_days=800.0
+        )
 
         return comps
 
-    def _build_comp(self, name: str, score: float, temp: float, vib: float) -> ComponentHealth:
-        if score >= 75.0:
+    def _build_comp(
+        self, name: str, score: float, temp: float, vib: float, base_life_days: float = 180.0
+    ) -> ComponentHealth:
+        stress = round(100.0 - score, 2)
+        risk = round(max(0.0, min(100.0, stress * 1.05)), 1)
+
+        # Failure probability non-linear Weibull curve
+        if score >= 85.0:
+            fail_prob = round(max(0.0, (100.0 - score) * 0.15), 1)
+        else:
+            fail_prob = round(min(100.0, max(0.0, 100.0 * (1.0 - math.exp(-((100.0 - score) / 38.0) ** 2.2)))), 1)
+
+        # Remaining Useful Life (RUL)
+        degradation_factor = max(0.01, (score / 100.0) ** 1.9)
+        rul_days = round(max(0.5, base_life_days * degradation_factor), 1)
+        rul_hours = round(rul_days * 24.0, 1)
+
+        # Maintenance Status Classification
+        if score >= 78.0:
             status = MachineStatus.HEALTHY
+            maint_status = "OPTIMAL"
             glow = "#10b981"  # Emerald green
+            is_failing = False
         elif score >= 50.0:
             status = MachineStatus.WARNING
+            maint_status = "MONITOR"
             glow = "#f59e0b"  # Amber yellow
+            is_failing = False
+        elif score >= 28.0:
+            status = MachineStatus.CRITICAL
+            maint_status = "SERVICE REQUIRED"
+            glow = "#ef4444"  # Crimson red
+            is_failing = False
         else:
             status = MachineStatus.CRITICAL
-            glow = "#ef4444"  # Crimson red
+            maint_status = "CRITICAL FAILURE"
+            glow = "#dc2626"  # Flashing deep red
+            is_failing = True
 
-        stress = round(100.0 - score, 2)
         return ComponentHealth(
             name=name,
             status=status,
             health_score=score,
+            risk_score=risk,
+            failure_probability=fail_prob,
+            maintenance_status=maint_status,
+            remaining_useful_life_days=rul_days,
+            remaining_useful_life_hours=rul_hours,
+            is_failing=is_failing,
             temperature=round(temp, 1),
             vibration=round(vib, 1),
             stress_level=stress,

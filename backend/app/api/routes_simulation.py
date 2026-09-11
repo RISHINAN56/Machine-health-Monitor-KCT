@@ -21,28 +21,28 @@ async def list_scenarios() -> List[Dict[str, str]]:
         },
         {
             "id": SimulationScenario.BEARING_WEAR.value,
-            "label": "Bearing Raceway Fatigue",
-            "description": "High vibration spikes (>800 mm/s), mechanical harmonics, localized bearing heating.",
+            "label": "Bearing Failure",
+            "description": "Vibration spikes (>880 mm/s), bearing pillow blocks heat up and flash red.",
         },
         {
-            "id": SimulationScenario.MOTOR_OVERHEAT.value,
-            "label": "Thermal Overload",
-            "description": "Cooling airflow blocked. Stator temperature escalates >60°C with thermal stress warnings.",
+            "id": SimulationScenario.MOTOR_OVERLOAD.value,
+            "label": "Motor Overload",
+            "description": "Electrical load surges to >920A, temperature climbs, motor glows orange/red.",
         },
         {
-            "id": SimulationScenario.LOOM_JAM.value,
-            "label": "Weft Insertion Jam",
-            "description": "Loom shed binding. Motor load surges to 1050 A, RPM drops sharply to 280 RPM.",
+            "id": SimulationScenario.SHAFT_MISALIGNMENT.value,
+            "label": "Shaft Misalignment",
+            "description": "RPM instability (erratic oscillation) and severe 2nd/3rd order vibration harmonics.",
         },
         {
-            "id": SimulationScenario.RAPID_ESTOP.value,
-            "label": "Emergency Stop (E-Stop)",
-            "description": "Safety gate triggered. Machine decelerates to 0 RPM within 1.5 seconds.",
+            "id": SimulationScenario.BELT_SLIPPAGE.value,
+            "label": "Belt Slippage",
+            "description": "Reduced mechanical efficiency, speed drops from 650 to 510 RPM with torque drag.",
         },
         {
-            "id": SimulationScenario.SPEED_FLUCTUATION.value,
-            "label": "Belt Slippage & Fluctuation",
-            "description": "Drive timing belt worn. Speed oscillates erratically between 450 and 820 RPM.",
+            "id": SimulationScenario.OVERHEATING.value,
+            "label": "Overheating Runaway",
+            "description": "Thermal spike past 75°C, cooling ducts choked, emergency thermal alarm trips.",
         },
     ]
 

@@ -16,6 +16,8 @@ from app.models.telemetry import (
     TelemetryPacket,
 )
 from app.services.alert_service import alert_service
+from app.services.energy_service import energy_service
+from app.services.fleet_service import fleet_service
 from app.services.maintenance_service import maintenance_service
 
 logger = logging.getLogger("digital_twin.streamer")
@@ -45,7 +47,7 @@ class TelemetryStreamer:
         self.meters_woven: float = 78.4
         self.latest_packet: Optional[TelemetryPacket] = None
 
-        # Scenario target setpoints
+        # Scenario target setpoints for 5 Industrial Failure Modes
         self._scenario_targets = {
             SimulationScenario.NORMAL: {
                 "temp": 31.0,
@@ -53,18 +55,48 @@ class TelemetryStreamer:
                 "load": 330.0,
                 "rpm": 650.0,
             },
+            # 1. Bearing Failure: severe vibration spike, localized friction
             SimulationScenario.BEARING_WEAR: {
                 "temp": 49.0,
-                "vib": 880.0,
+                "vib": 890.0,
                 "load": 480.0,
-                "rpm": 640.0,
+                "rpm": 642.0,
+            },
+            # 2. Motor Overload: high current load, rising stator heat
+            SimulationScenario.MOTOR_OVERLOAD: {
+                "temp": 64.0,
+                "vib": 310.0,
+                "load": 940.0,
+                "rpm": 620.0,
             },
             SimulationScenario.MOTOR_OVERHEAT: {
                 "temp": 64.0,
-                "vib": 320.0,
-                "load": 780.0,
-                "rpm": 625.0,
+                "vib": 310.0,
+                "load": 940.0,
+                "rpm": 620.0,
             },
+            # 3. Shaft Misalignment: RPM deviation, dynamic oscillation & vibration
+            SimulationScenario.SHAFT_MISALIGNMENT: {
+                "temp": 44.0,
+                "vib": 720.0,
+                "load": 560.0,
+                "rpm": 685.0,
+            },
+            # 4. Belt Slippage: reduced mechanical transfer, speed drop, load surge
+            SimulationScenario.BELT_SLIPPAGE: {
+                "temp": 46.0,
+                "vib": 410.0,
+                "load": 680.0,
+                "rpm": 510.0,
+            },
+            # 5. Overheating: thermal runaway, emergency thermal alarm
+            SimulationScenario.OVERHEATING: {
+                "temp": 78.0,
+                "vib": 380.0,
+                "load": 790.0,
+                "rpm": 615.0,
+            },
+            # Backwards compatibility scenarios
             SimulationScenario.LOOM_JAM: {
                 "temp": 52.0,
                 "vib": 920.0,
@@ -197,7 +229,10 @@ class TelemetryStreamer:
         # 4. Trigger Alarms / Alerts
         await alert_service.evaluate_sensor_alerts(sensors)
 
-        # 5. OEE Calculation (Availability * Performance * Quality)
+        # 5. Energy Intelligence Calculation
+        energy_service.evaluate_energy(sensors, machine_id="LOOM-01")
+
+        # 6. OEE Calculation (Availability * Performance * Quality)
         availability = 0.98 if sensors.rpm > 100 else 0.0
         perf = min(1.0, sensors.rpm / settings.RATED_RPM) if sensors.rpm > 0 else 0.0
         quality = 0.99 if overall_score > 70 else (0.92 if overall_score > 45 else 0.75)
@@ -205,8 +240,9 @@ class TelemetryStreamer:
 
         uptime_secs = (datetime.utcnow() - self.start_time).total_seconds()
 
-        return TelemetryPacket(
+        packet = TelemetryPacket(
             timestamp=sensors.timestamp,
+            machine_id="LOOM-01",
             sensors=sensors,
             overall_health_score=overall_score,
             overall_status=overall_status,
@@ -221,6 +257,11 @@ class TelemetryStreamer:
             oee_percentage=oee,
             active_alerts_count=alert_service.get_active_count(),
         )
+
+        # 7. Sync Machine A in Multi-Machine Fleet
+        fleet_service.sync_primary_machine(packet)
+
+        return packet
 
 
 telemetry_streamer = TelemetryStreamer()

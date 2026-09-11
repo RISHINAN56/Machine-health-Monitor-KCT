@@ -12,7 +12,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
   score,
   size = 180,
   strokeWidth = 14,
-  title = "MACHINE HEALTH",
+  title = "MACHINE HEALTH SCORE",
   statusText,
 }) => {
   const normalizedScore = Math.max(0, Math.min(100, score));
@@ -22,20 +22,20 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
   const arcLength = circumference * 0.75;
   const strokeDashoffset = arcLength - (arcLength * normalizedScore) / 100;
 
-  // Determine colors based on score
+  // Determine colors based on score: Optimal (>=85), Normal (70-84), Warning (50-69), Critical (<50)
   const color =
-    normalizedScore >= 75
+    normalizedScore >= 70
       ? "#10b981" // Emerald
       : normalizedScore >= 50
-      ? "#f59e0b" // Amber
-      : "#ef4444"; // Crimson
+        ? "#f59e0b" // Amber
+        : "#ef4444"; // Crimson
 
   const glowClass =
-    normalizedScore >= 75
+    normalizedScore >= 70
       ? "shadow-glow-emerald"
       : normalizedScore >= 50
-      ? "shadow-glow-amber"
-      : "shadow-glow-crimson";
+        ? "shadow-glow-amber"
+        : "shadow-glow-crimson";
 
   return (
     <div className="flex flex-col items-center justify-center relative">
@@ -77,11 +77,11 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
 
         {/* Center Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] font-hud tracking-widest text-slate-400 uppercase">
+          <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
             {title}
           </span>
           <span
-            className="text-4xl font-extrabold font-hud tracking-tight mt-0.5"
+            className="text-4xl font-extrabold tracking-tight mt-0.5"
             style={{ color }}
           >
             {normalizedScore.toFixed(0)}
@@ -96,11 +96,13 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
             }}
           >
             {statusText ||
-              (normalizedScore >= 75
+              (normalizedScore >= 85
                 ? "Optimal"
-                : normalizedScore >= 50
-                ? "Warning"
-                : "Critical")}
+                : normalizedScore >= 70
+                  ? "Normal"
+                  : normalizedScore >= 50
+                    ? "Warning"
+                    : "Critical")}
           </span>
         </div>
       </div>

@@ -19,26 +19,30 @@ export const MaintenancePanel: React.FC = () => {
   const isCritical = telemetry?.overall_status === "Critical";
   const isWarning = telemetry?.overall_status === "Warning";
 
-  // Derive suggested action
+  // Derive suggested action safely
+  const vib = telemetry?.sensors?.vibration ?? 0;
+  const temp = telemetry?.sensors?.temperature ?? 0;
+  const load = telemetry?.sensors?.motor_load ?? 0;
+
   const suggestedAction =
-    telemetry?.sensors.vibration && telemetry.sensors.vibration >= 750
+    vib >= 750
       ? "Replace Spindle Bearings & Re-align Drive Shaft"
-      : telemetry?.sensors.temperature && telemetry.sensors.temperature >= 55
-      ? "Motor Stator Service & Clean Cooling Ducts"
-      : telemetry?.sensors.motor_load && telemetry.sensors.motor_load >= 850
-      ? "Inspect Shedding Mechanism & Lubricate Sley Sword"
-      : isWarning
-      ? "Lubricate Bearings & Tension Drive Belt"
-      : "Routine 500-Hour Preventive Maintenance";
+      : temp >= 55
+        ? "Motor Stator Service & Clean Cooling Ducts"
+        : load >= 850
+          ? "Inspect Shedding Mechanism & Lubricate Sley Sword"
+          : isWarning
+            ? "Lubricate Bearings & Tension Drive Belt"
+            : "Routine 500-Hour Preventive Maintenance";
 
   const targetComponent =
-    telemetry?.sensors.vibration && telemetry.sensors.vibration >= 450
+    vib >= 450
       ? "bearings"
-      : telemetry?.sensors.temperature && telemetry.sensors.temperature >= 45
-      ? "main_motor"
-      : telemetry?.sensors.motor_load && telemetry.sensors.motor_load >= 650
-      ? "loom_section"
-      : "drive_shaft";
+      : temp >= 45
+        ? "main_motor"
+        : load >= 650
+          ? "loom_section"
+          : "drive_shaft";
 
   const priority = isCritical ? "EMERGENCY" : isWarning ? "HIGH" : "MEDIUM";
 
@@ -55,7 +59,7 @@ export const MaintenancePanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <Wrench className="w-5 h-5 text-amber-400" />
           <h2 className="font-hud text-sm tracking-wider text-amber-300 uppercase font-bold">
-            Prescriptive Maintenance & Work Orders
+            Maintenance Recommendations
           </h2>
         </div>
         <span className="text-xs font-mono text-slate-400">
@@ -65,38 +69,36 @@ export const MaintenancePanel: React.FC = () => {
 
       {/* Active AI Recommendation Banner */}
       <div
-        className={`p-4 rounded-xl border my-3.5 ${
-          isCritical
+        className={`p-4 rounded-xl border my-3.5 ${isCritical
             ? "bg-red-950/40 border-cyber-crimson/50 shadow-glow-crimson"
             : isWarning
-            ? "bg-amber-950/40 border-cyber-amber/50 shadow-glow-amber"
-            : "bg-emerald-950/30 border-cyber-emerald/40"
-        }`}
+              ? "bg-amber-950/40 border-cyber-amber/50 shadow-glow-amber"
+              : "bg-emerald-950/30 border-cyber-emerald/40"
+          }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span
-                className={`text-[10px] font-hud uppercase px-2 py-0.5 rounded font-bold ${
-                  isCritical
+                className={`text-[10px] font-hud uppercase px-2 py-0.5 rounded font-bold ${isCritical
                     ? "bg-red-500 text-white animate-pulse"
                     : isWarning
-                    ? "bg-amber-500 text-industrial-950"
-                    : "bg-emerald-600 text-white"
-                }`}
+                      ? "bg-amber-500 text-industrial-950"
+                      : "bg-emerald-600 text-white"
+                  }`}
               >
-                {priority} PRESCRIPTION
+                {priority} RECOMMENDATION
               </span>
               <span className="text-xs font-mono text-slate-300">
                 Target: <b>{targetComponent.toUpperCase()}</b>
               </span>
             </div>
-            <h3 className="text-base font-bold text-slate-100 font-sans">
+            <h3 className="text-base font-semibold text-slate-100 font-sans">
               {suggestedAction}
             </h3>
-            <p className="text-xs text-slate-300 mt-1 font-mono">
+            <p className="text-xs text-slate-300 mt-1 font-mono font-normal">
               Action Window:{" "}
-              <b className="text-cyan-300">
+              <b className="text-cyan-300 font-semibold">
                 {isCritical ? "Within 4 Hours" : isWarning ? "Within 24 Hours" : "Next Scheduled Shift"}
               </b>
             </p>
@@ -105,11 +107,10 @@ export const MaintenancePanel: React.FC = () => {
           <button
             onClick={handleDispatchAction}
             disabled={isCreating}
-            className={`px-4 py-2.5 rounded-xl font-hud text-xs tracking-wider font-bold transition flex items-center gap-2 whitespace-nowrap ${
-              isCritical
+            className={`px-4 py-2.5 rounded-xl font-hud text-xs tracking-wider font-medium transition flex items-center gap-2 whitespace-nowrap ${isCritical
                 ? "bg-cyber-crimson hover:bg-red-600 text-white shadow-glow-crimson"
                 : "bg-cyan-500 hover:bg-cyan-400 text-industrial-950 shadow-glow-cyan"
-            }`}
+              }`}
           >
             <PlusCircle className="w-4 h-4" />
             {isCreating ? "DISPATCHING..." : "DISPATCH WORK ORDER"}
@@ -120,7 +121,7 @@ export const MaintenancePanel: React.FC = () => {
       {/* Work Orders List */}
       <div>
         <div className="text-xs font-hud text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Active Maintenance Dispatches</span>
+          <span>Active Work Orders</span>
           <span className="font-mono text-[11px] text-slate-500">Auto-logged</span>
         </div>
 
@@ -149,11 +150,10 @@ export const MaintenancePanel: React.FC = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`text-[10px] font-hud uppercase px-2 py-0.5 rounded font-bold ${
-                      order.status === "COMPLETED"
+                    className={`text-[10px] font-hud uppercase px-2 py-0.5 rounded font-bold ${order.status === "COMPLETED"
                         ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                         : "bg-amber-950 text-amber-300 border border-amber-800"
-                    }`}
+                      }`}
                   >
                     {order.status}
                   </span>

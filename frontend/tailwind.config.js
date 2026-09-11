@@ -25,9 +25,10 @@ export default {
         },
       },
       fontFamily: {
-        hud: ["Orbitron", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
-        sans: ["Inter", "sans-serif"],
+        sans: ["Poppins", "system-ui", "-apple-system", "sans-serif"],
+        hud: ["Poppins", "system-ui", "-apple-system", "sans-serif"],
+        display: ["Poppins", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["Poppins", "monospace"],
       },
       boxShadow: {
         "glow-cyan": "0 0 20px rgba(0, 240, 255, 0.35)",

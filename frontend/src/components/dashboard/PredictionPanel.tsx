@@ -28,14 +28,14 @@ export const PredictionPanel: React.FC = () => {
   const statusBadgeColor = isCritical
     ? "bg-cyber-crimson/20 border-cyber-crimson text-cyber-crimson shadow-glow-crimson"
     : isWarning
-    ? "bg-cyber-amber/20 border-cyber-amber text-cyber-amber shadow-glow-amber"
-    : "bg-cyber-emerald/20 border-cyber-emerald text-cyber-emerald shadow-glow-emerald";
+      ? "bg-cyber-amber/20 border-cyber-amber text-cyber-amber shadow-glow-amber"
+      : "bg-cyber-emerald/20 border-cyber-emerald text-cyber-emerald shadow-glow-emerald";
 
   const StatusIcon = isCritical
     ? AlertOctagon
     : isWarning
-    ? AlertTriangle
-    : ShieldCheck;
+      ? AlertTriangle
+      : ShieldCheck;
 
   return (
     <div className="glass-panel rounded-2xl p-5 border border-industrial-700/60 shadow-panel flex flex-col justify-between">
@@ -44,7 +44,7 @@ export const PredictionPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <BrainCircuit className="w-5 h-5 text-cyan-400" />
           <h2 className="font-hud text-sm tracking-wider text-cyan-300 uppercase font-bold">
-            AI Health Prediction & Diagnostics
+            Predictive Maintenance
           </h2>
         </div>
         <div className="flex items-center gap-1.5 bg-industrial-800/80 px-2.5 py-1 rounded-lg border border-industrial-700">
@@ -67,12 +67,12 @@ export const PredictionPanel: React.FC = () => {
           <span className="text-xs font-hud text-slate-400 tracking-wider">
             PREDICTED STATE
           </span>
-          <span className="font-hud text-2xl font-black tracking-wide text-white uppercase mt-0.5">
+          <span className="font-hud text-2xl font-extrabold tracking-wide text-white uppercase mt-0.5">
             {status}
           </span>
           <div className="flex items-center gap-1 text-[11px] text-slate-400 font-mono mt-1">
             <Clock className="w-3 h-3 text-cyan-400" />
-            <span>RUL: <b className="text-cyan-300">{rulHours.toFixed(1)}h</b></span>
+            <span>RUL: <b className="text-cyan-300 font-bold">{rulHours.toFixed(1)}h</b></span>
           </div>
         </div>
 
@@ -82,29 +82,27 @@ export const PredictionPanel: React.FC = () => {
           <div>
             <div className="flex justify-between text-xs font-mono mb-1">
               <span className="text-slate-300 flex items-center gap-1">
-                Failure Risk Probability
+                Failure Probability (%)
               </span>
               <span
-                className={`font-bold ${
-                  failProb > 50
+                className={`font-bold ${failProb > 50
                     ? "text-cyber-crimson"
                     : failProb > 25
-                    ? "text-cyber-amber"
-                    : "text-cyber-emerald"
-                }`}
+                      ? "text-cyber-amber"
+                      : "text-cyber-emerald"
+                  }`}
               >
                 {failProb.toFixed(1)}%
               </span>
             </div>
             <div className="w-full bg-industrial-950 rounded-full h-2.5 overflow-hidden border border-industrial-800">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  failProb > 50
+                className={`h-full rounded-full transition-all duration-500 ${failProb > 50
                     ? "bg-cyber-crimson shadow-glow-crimson"
                     : failProb > 25
-                    ? "bg-cyber-amber shadow-glow-amber"
-                    : "bg-cyber-emerald"
-                }`}
+                      ? "bg-cyber-amber shadow-glow-amber"
+                      : "bg-cyber-emerald"
+                  }`}
                 style={{ width: `${Math.max(2, failProb)}%` }}
               />
             </div>
@@ -113,7 +111,7 @@ export const PredictionPanel: React.FC = () => {
           {/* Model Class Probabilities */}
           <div className="grid grid-cols-3 gap-2 pt-1 text-center font-mono text-xs">
             <div className="p-2 rounded-lg bg-industrial-950/70 border border-emerald-950/60">
-              <span className="text-[10px] text-slate-400 block">HEALTHY</span>
+              <span className="text-[10px] text-slate-400 block">OPTIMAL</span>
               <span className="font-bold text-cyber-emerald">
                 {((probs["Healthy"] || 0) * 100).toFixed(1)}%
               </span>
@@ -134,11 +132,11 @@ export const PredictionPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Root-Cause Explainability Box ("WHY") */}
+      {/* AI Root-Cause Explainability Box */}
       <div className="rounded-xl p-3.5 bg-industrial-950/80 border border-cyan-900/40 mt-1">
         <div className="flex items-center gap-1.5 mb-1.5 text-xs font-hud text-cyan-300 font-semibold tracking-wide">
           <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-          <span>EXPLAINABLE AI DIAGNOSTIC REASONING:</span>
+          <span>AI ROOT-CAUSE DIAGNOSTICS &amp; REASONING:</span>
         </div>
         <p className="text-xs text-slate-300 font-sans leading-relaxed">
           {pred?.explanation ||

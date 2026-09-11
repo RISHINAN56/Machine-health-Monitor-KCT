@@ -12,7 +12,13 @@ class MachineStatus(str, Enum):
 
 class SimulationScenario(str, Enum):
     NORMAL = "normal"
-    BEARING_WEAR = "bearing_wear"
+    # Phase 2 5 Industrial Failure Modes
+    BEARING_WEAR = "bearing_wear"            # 1. Bearing Failure
+    MOTOR_OVERLOAD = "motor_overload"        # 2. Motor Overload
+    SHAFT_MISALIGNMENT = "shaft_misalignment"# 3. Shaft Misalignment
+    BELT_SLIPPAGE = "belt_slippage"          # 4. Belt Slippage
+    OVERHEATING = "overheating"              # 5. Overheating
+    # Backwards compatibility aliases
     MOTOR_OVERHEAT = "motor_overheat"
     LOOM_JAM = "loom_jam"
     RAPID_ESTOP = "rapid_estop"
@@ -42,6 +48,12 @@ class ComponentHealth(BaseModel):
     name: str
     status: MachineStatus
     health_score: float = Field(..., ge=0.0, le=100.0)
+    risk_score: float = Field(0.0, ge=0.0, le=100.0)
+    failure_probability: float = Field(0.0, ge=0.0, le=100.0)
+    maintenance_status: str = Field("OPTIMAL", description="Maintenance urgency classification")
+    remaining_useful_life_days: float = Field(100.0, description="Estimated days until critical failure")
+    remaining_useful_life_hours: float = Field(2400.0, description="Estimated operating hours until failure")
+    is_failing: bool = Field(False, description="True if component is in active failure state (triggers 3D flashing strobe)")
     temperature: float
     vibration: float
     stress_level: float = Field(..., ge=0.0, le=100.0)
@@ -62,6 +74,7 @@ class AIPrediction(BaseModel):
 
 class TelemetryPacket(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    machine_id: str = Field("LOOM-01", description="Identifier of the monitored machine")
     sensors: RawSensorData
     overall_health_score: float = Field(..., ge=0.0, le=100.0)
     overall_status: MachineStatus

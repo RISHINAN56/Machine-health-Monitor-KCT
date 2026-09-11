@@ -45,19 +45,28 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-4xl sm:text-6xl font-black font-hud tracking-tight text-white leading-tight uppercase"
+          className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight uppercase"
         >
-          Industrial <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 text-glow-cyan">Digital Twin</span> Platform
+          MHM
         </motion.h1>
 
         {/* Subtitle */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="text-xl sm:text-2xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 text-glow-cyan uppercase mt-2"
+        >
+          3D Visualization of Machine Health Monitoring
+        </motion.h2>
+
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-slate-300 text-sm sm:text-base max-w-2xl mt-4 font-sans leading-relaxed"
+          className="text-slate-300 text-sm sm:text-base max-w-2xl mt-4 font-normal leading-relaxed"
         >
-          Continuous spatial 3D kinematic monitoring, physics-informed ISO 10816 vibration health indexing, and explainable AI-driven predictive maintenance for advanced industrial textile looms.
+          Advanced real-time digital twin platform for industrial machinery. Engineered for engineering students, faculty, and industry professionals—featuring physics-based 3D kinematics, ISO 10816 vibration analysis, AI failure prediction, and predictive maintenance.
         </motion.p>
 
         {/* CTA Launch Button & Quick Telemetry Indicators */}
@@ -69,9 +78,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
         >
           <button
             onClick={onEnterConsole}
-            className="px-8 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-industrial-950 font-hud text-sm font-black tracking-wider uppercase transition-all transform hover:scale-105 shadow-glow-cyan flex items-center gap-2.5"
+            className="px-8 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-industrial-950 font-medium text-sm tracking-wider uppercase transition-all transform hover:scale-105 shadow-glow-cyan flex items-center gap-2.5"
           >
-            <span>Launch Mission Control Twin</span>
+            <span>Launch 3D Machine Visualization</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
@@ -84,32 +93,31 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full mt-10 max-w-3xl"
         >
           <div className="glass-panel p-3 rounded-xl border border-industrial-700/60 text-left">
-            <span className="text-[10px] font-hud text-slate-400 uppercase block">SYSTEM STATUS</span>
-            <span className={`text-base font-hud font-bold uppercase mt-0.5 block ${
-              status === "Healthy" ? "text-cyber-emerald" : status === "Warning" ? "text-cyber-amber" : "text-cyber-crimson"
-            }`}>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase block">SYSTEM STATUS</span>
+            <span className={`text-base font-bold uppercase mt-0.5 block ${status === "Healthy" ? "text-cyber-emerald" : status === "Warning" ? "text-cyber-amber" : "text-cyber-crimson"
+              }`}>
               {status}
             </span>
           </div>
 
           <div className="glass-panel p-3 rounded-xl border border-industrial-700/60 text-left">
-            <span className="text-[10px] font-hud text-slate-400 uppercase block">ISO HEALTH SCORE</span>
-            <span className="text-base font-hud font-bold text-cyan-300 mt-0.5 block">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase block">MACHINE HEALTH SCORE</span>
+            <span className="text-base font-extrabold text-cyan-300 mt-0.5 block">
               {health.toFixed(0)}% OPTIMAL
             </span>
           </div>
 
           <div className="glass-panel p-3 rounded-xl border border-industrial-700/60 text-left">
-            <span className="text-[10px] font-hud text-slate-400 uppercase block">SPINDLE SPEED</span>
-            <span className="text-base font-hud font-bold text-slate-100 mt-0.5 block">
-              {telemetry?.sensors.rpm.toFixed(0) || 650} RPM
+            <span className="text-[10px] font-semibold text-slate-400 uppercase block">SPINDLE SPEED</span>
+            <span className="text-base font-bold text-slate-100 mt-0.5 block">
+              {(telemetry?.sensors?.rpm ?? 650).toFixed(0)} RPM
             </span>
           </div>
 
           <div className="glass-panel p-3 rounded-xl border border-industrial-700/60 text-left">
-            <span className="text-[10px] font-hud text-slate-400 uppercase block">DSP LATENCY</span>
-            <span className="text-base font-hud font-bold text-emerald-400 mt-0.5 block">
-              0.08s (10 Hz)
+            <span className="text-[10px] font-semibold text-slate-400 uppercase block">TELEMETRY STREAM</span>
+            <span className="text-base font-bold text-emerald-400 mt-0.5 block">
+              10 Hz Live
             </span>
           </div>
         </motion.div>
@@ -129,11 +137,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mb-4 shadow-glow-cyan">
             <Boxes className="w-6 h-6" />
           </div>
-          <h3 className="font-hud text-lg font-bold text-slate-100 mb-2">
-            Spatial 3D Digital Twin
+          <h3 className="text-lg font-semibold text-slate-100 mb-2">
+            Real-Time Sensor Data
           </h3>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            WebGL / Three.js procedural loom model with dynamic RPM shaft kinematics, reciprocating reed animation, structural vibration shake physics, and real-time state glow shaders.
+          <p className="text-sm text-slate-300 leading-relaxed font-sans">
+            Continuous 10 Hz acquisition across triaxial vibration analysis, thermal stator thermocouples, RPM monitoring, and motor armature current.
           </p>
         </div>
 
@@ -142,11 +150,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 mb-4 shadow-glow-emerald">
             <Cpu className="w-6 h-6" />
           </div>
-          <h3 className="font-hud text-lg font-bold text-slate-100 mb-2">
-            Explainable AI Diagnostics
+          <h3 className="text-lg font-semibold text-slate-100 mb-2">
+            Component Health Analysis
           </h3>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Machine learning classifier coupled with physical ISO 10816 vibration standards. Generates probabilistic failure forecasts and natural-language explanations of WHY anomalies occur.
+          <p className="text-sm text-slate-300 leading-relaxed font-sans">
+            Multi-factor Remaining Useful Life (RUL) estimation, Weibull hazard failure probability modeling, and sub-assembly degradation tracking.
           </p>
         </div>
 
@@ -155,11 +163,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mb-4 shadow-glow-amber">
             <Wrench className="w-6 h-6" />
           </div>
-          <h3 className="font-hud text-lg font-bold text-slate-100 mb-2">
-            Prescriptive Maintenance
+          <h3 className="text-lg font-semibold text-slate-100 mb-2">
+            Predictive Maintenance
           </h3>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Automated work order generation, execution window countdowns, active alarm deduplication, and single-click technician dispatching before catastrophic downtime occurs.
+          <p className="text-sm text-slate-300 leading-relaxed font-sans">
+            AI failure prediction coupled with ISO 10816 standards, explainable root-cause diagnostics, and automated prescriptive maintenance work orders.
           </p>
         </div>
       </section>

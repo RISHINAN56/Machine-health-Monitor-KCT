@@ -27,9 +27,9 @@ export const WaveformOscilloscope: React.FC = () => {
       const height = canvas.height;
       const t = telemetryRef.current;
 
-      const rpm = t?.sensors.rpm ?? 650;
-      const vib = t?.sensors.vibration ?? 100;
-      const load = t?.sensors.motor_load ?? 300;
+      const rpm = t?.sensors?.rpm ?? 650;
+      const vib = t?.sensors?.vibration ?? 100;
+      const load = t?.sensors?.motor_load ?? 300;
 
       // Calculate vibration normalized severity (0.0 to 2.5)
       const severity = Math.min(2.5, vib / 400.0);
@@ -95,8 +95,8 @@ export const WaveformOscilloscope: React.FC = () => {
       const traceColor = isCritical
         ? "#ef4444"
         : isWarning
-        ? "#f59e0b"
-        : "#00f0ff";
+          ? "#f59e0b"
+          : "#00f0ff";
 
       ctx.strokeStyle = traceColor;
       ctx.lineWidth = isCritical ? 2.5 : 2;
@@ -125,7 +125,7 @@ export const WaveformOscilloscope: React.FC = () => {
     };
   }, []);
 
-  const vibration = telemetry?.sensors.vibration ?? 0;
+  const vibration = telemetry?.sensors?.vibration ?? 0;
   const vppEstimate = (vibration * 0.0028).toFixed(3);
 
   return (
@@ -134,8 +134,8 @@ export const WaveformOscilloscope: React.FC = () => {
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-industrial-700/40">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-cyan-400" />
-          <h3 className="font-hud text-xs tracking-wider text-cyan-200 uppercase font-bold">
-            Live Vibration & Acoustic Oscilloscope
+          <h3 className="font-hud text-xs tracking-wider text-cyan-200 uppercase font-semibold">
+            Vibration Waveform Analysis
           </h3>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
@@ -166,11 +166,11 @@ export const WaveformOscilloscope: React.FC = () => {
             vibration >= 750
               ? "text-cyber-crimson font-bold"
               : vibration >= 450
-              ? "text-cyber-amber font-bold"
-              : "text-cyber-emerald"
+                ? "text-cyber-amber font-bold"
+                : "text-cyber-emerald"
           }
         >
-          HARMONICS: {vibration >= 750 ? "CRITICAL SEVERITY" : vibration >= 450 ? "MODERATE MODULATION" : "CLEAN SINE"}
+          HARMONICS: {vibration >= 750 ? "Severe Anomaly (Critical)" : vibration >= 450 ? "Moderate Modulation (Warning)" : "Clean Sine (Normal)"}
         </span>
       </div>
     </div>

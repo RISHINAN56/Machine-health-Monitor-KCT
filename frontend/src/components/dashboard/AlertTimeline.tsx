@@ -39,7 +39,7 @@ export const AlertTimeline: React.FC = () => {
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-cyan-400" />
           <h2 className="font-hud text-sm tracking-wider text-cyan-300 uppercase font-bold">
-            Real-Time Alert Stream & Timeline
+            System Alerts
           </h2>
         </div>
         <span className="text-xs font-mono text-slate-400">
@@ -62,13 +62,12 @@ export const AlertTimeline: React.FC = () => {
             return (
               <div
                 key={alert.id}
-                className={`p-3 rounded-xl border transition flex items-start justify-between gap-3 text-xs ${
-                  alert.severity === "CRITICAL"
+                className={`p-3 rounded-xl border transition flex items-start justify-between gap-3 text-xs ${alert.severity === "CRITICAL"
                     ? "bg-red-950/30 border-red-900/60"
                     : alert.severity === "WARNING"
-                    ? "bg-amber-950/25 border-amber-900/50"
-                    : "bg-industrial-950/60 border-industrial-800"
-                }`}
+                      ? "bg-amber-950/25 border-amber-900/50"
+                      : "bg-industrial-950/60 border-industrial-800"
+                  }`}
               >
                 <div className="flex items-start gap-2.5">
                   <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${badge.color}`}>
@@ -76,7 +75,7 @@ export const AlertTimeline: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-100 font-sans">
+                      <span className="font-semibold text-slate-100 font-sans">
                         {alert.title}
                       </span>
                       <span
@@ -92,20 +91,20 @@ export const AlertTimeline: React.FC = () => {
                       {alert.message}
                     </p>
                     <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                      Metric: {alert.metric_name} = {alert.metric_value.toFixed(1)} (Limit: {alert.threshold_value})
+                      Metric: {alert.metric_name} = {(alert.metric_value ?? 0).toFixed(1)} (Limit: {alert.threshold_value})
                     </span>
                   </div>
                 </div>
 
                 <div className="shrink-0 flex items-center gap-1.5">
                   {alert.acknowledged ? (
-                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-medium">
                       <CheckCheck className="w-3.5 h-3.5" /> ACK
                     </span>
                   ) : (
                     <button
                       onClick={() => acknowledgeAlert(alert.id)}
-                      className="px-2.5 py-1 rounded-lg bg-industrial-800 hover:bg-industrial-700 text-cyan-300 border border-industrial-700 text-[10px] font-hud font-bold tracking-wider transition"
+                      className="px-2.5 py-1 rounded-lg bg-industrial-800 hover:bg-industrial-700 text-cyan-300 border border-industrial-700 text-[10px] font-hud font-medium tracking-wider transition"
                     >
                       ACKNOWLEDGE
                     </button>

@@ -12,6 +12,10 @@ from app.api.routes_telemetry import router as telemetry_router
 from app.api.routes_simulation import router as simulation_router
 from app.api.routes_alerts import router as alerts_router
 from app.api.routes_maintenance import router as maintenance_router
+from app.api.routes_energy import router as energy_router
+from app.api.routes_fleet import router as fleet_router
+from app.api.routes_assistant import router as assistant_router
+from app.api.routes_history import router as history_router
 
 # Configure rich logging
 logging.basicConfig(
@@ -56,6 +60,10 @@ app.include_router(telemetry_router, prefix=settings.API_PREFIX)
 app.include_router(simulation_router, prefix=settings.API_PREFIX)
 app.include_router(alerts_router, prefix=settings.API_PREFIX)
 app.include_router(maintenance_router, prefix=settings.API_PREFIX)
+app.include_router(energy_router)
+app.include_router(fleet_router)
+app.include_router(assistant_router)
+app.include_router(history_router)
 
 
 @app.get("/", tags=["Root"])

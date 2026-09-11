@@ -8,15 +8,18 @@ echo "=========================================================="
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
-# Activate Python virtual environment
+# Determine Python executable
+PYTHON_BIN="python3"
 if [ -d ".venv" ]; then
   source .venv/bin/activate
+elif [ -f "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3" ]; then
+  PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
 fi
 
 # 1. Start FastAPI Backend
 echo "[1/2] Starting FastAPI Backend on http://localhost:8000..."
 cd "$ROOT_DIR/backend"
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+$PYTHON_BIN -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 # 2. Start React + Vite Frontend

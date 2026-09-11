@@ -23,10 +23,10 @@ export const HistoricalAnalytics: React.FC = () => {
     return { min, max, avg };
   };
 
-  const tempStats = getStats(slice.map((s) => s.sensors.temperature));
-  const vibStats = getStats(slice.map((s) => s.sensors.vibration));
-  const loadStats = getStats(slice.map((s) => s.sensors.motor_load));
-  const rpmStats = getStats(slice.map((s) => s.sensors.rpm));
+  const tempStats = getStats(slice.map((s) => s?.sensors?.temperature ?? 0));
+  const vibStats = getStats(slice.map((s) => s?.sensors?.vibration ?? 0));
+  const loadStats = getStats(slice.map((s) => s?.sensors?.motor_load ?? 0));
+  const rpmStats = getStats(slice.map((s) => s?.sensors?.rpm ?? 0));
 
   // Multi-line SVG chart renderer
   const renderMultiChart = () => {
@@ -54,22 +54,22 @@ export const HistoricalAnalytics: React.FC = () => {
     };
 
     const tempPath = buildPath(
-      slice.map((s) => s.sensors.temperature),
+      slice.map((s) => s?.sensors?.temperature ?? 0),
       20,
       80
     );
     const vibPath = buildPath(
-      slice.map((s) => s.sensors.vibration),
+      slice.map((s) => s?.sensors?.vibration ?? 0),
       0,
       1400
     );
     const loadPath = buildPath(
-      slice.map((s) => s.sensors.motor_load),
+      slice.map((s) => s?.sensors?.motor_load ?? 0),
       0,
       1200
     );
     const rpmPath = buildPath(
-      slice.map((s) => s.sensors.rpm),
+      slice.map((s) => s?.sensors?.rpm ?? 0),
       0,
       1000
     );
@@ -154,10 +154,10 @@ export const HistoricalAnalytics: React.FC = () => {
           <TrendingUp className="w-5 h-5 text-cyan-400" />
           <div>
             <h2 className="font-hud text-sm tracking-wider text-cyan-300 uppercase font-bold">
-              Historical Telemetry & Multi-Metric Trends
+              Historical Analytics
             </h2>
             <p className="text-xs text-slate-400 font-mono">
-              Live ISO 10816 Mechanical Sensor History & Statistical Envelopes
+              Multi-Metric Sensor Telemetry Trends &amp; Statistical Envelopes
             </p>
           </div>
         </div>
@@ -170,11 +170,10 @@ export const HistoricalAnalytics: React.FC = () => {
               onClick={() =>
                 setActiveMetrics((p) => ({ ...p, vibration: !p.vibration }))
               }
-              className={`px-2 py-0.5 rounded transition ${
-                activeMetrics.vibration
-                  ? "bg-cyan-500/20 text-cyan-300 font-bold"
-                  : "text-slate-500"
-              }`}
+              className={`px-2 py-0.5 rounded transition ${activeMetrics.vibration
+                  ? "bg-cyan-500/20 text-cyan-300 font-medium"
+                  : "text-slate-500 font-normal"
+                }`}
             >
               Vib
             </button>
@@ -182,11 +181,10 @@ export const HistoricalAnalytics: React.FC = () => {
               onClick={() =>
                 setActiveMetrics((p) => ({ ...p, temperature: !p.temperature }))
               }
-              className={`px-2 py-0.5 rounded transition ${
-                activeMetrics.temperature
-                  ? "bg-rose-500/20 text-rose-300 font-bold"
-                  : "text-slate-500"
-              }`}
+              className={`px-2 py-0.5 rounded transition ${activeMetrics.temperature
+                  ? "bg-rose-500/20 text-rose-300 font-medium"
+                  : "text-slate-500 font-normal"
+                }`}
             >
               Temp
             </button>
@@ -194,11 +192,10 @@ export const HistoricalAnalytics: React.FC = () => {
               onClick={() =>
                 setActiveMetrics((p) => ({ ...p, motor_load: !p.motor_load }))
               }
-              className={`px-2 py-0.5 rounded transition ${
-                activeMetrics.motor_load
-                  ? "bg-amber-500/20 text-amber-300 font-bold"
-                  : "text-slate-500"
-              }`}
+              className={`px-2 py-0.5 rounded transition ${activeMetrics.motor_load
+                  ? "bg-amber-500/20 text-amber-300 font-medium"
+                  : "text-slate-500 font-normal"
+                }`}
             >
               Load
             </button>
@@ -206,11 +203,10 @@ export const HistoricalAnalytics: React.FC = () => {
               onClick={() =>
                 setActiveMetrics((p) => ({ ...p, rpm: !p.rpm }))
               }
-              className={`px-2 py-0.5 rounded transition ${
-                activeMetrics.rpm
-                  ? "bg-emerald-500/20 text-emerald-300 font-bold"
-                  : "text-slate-500"
-              }`}
+              className={`px-2 py-0.5 rounded transition ${activeMetrics.rpm
+                  ? "bg-emerald-500/20 text-emerald-300 font-medium"
+                  : "text-slate-500 font-normal"
+                }`}
             >
               RPM
             </button>
@@ -222,11 +218,10 @@ export const HistoricalAnalytics: React.FC = () => {
               <button
                 key={count}
                 onClick={() => setSelectedRange(count)}
-                className={`px-2.5 py-0.5 rounded transition ${
-                  selectedRange === count
-                    ? "bg-cyan-500 text-industrial-950 font-bold"
-                    : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-2.5 py-0.5 rounded transition ${selectedRange === count
+                    ? "bg-cyan-500 text-industrial-950 font-medium"
+                    : "text-slate-400 hover:text-white font-normal"
+                  }`}
               >
                 {count}s
               </button>
@@ -241,34 +236,34 @@ export const HistoricalAnalytics: React.FC = () => {
       {/* Statistical Summary Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-industrial-700/40 font-mono text-xs">
         <div className="p-2.5 rounded-xl bg-industrial-950/60 border border-industrial-800">
-          <span className="text-[10px] text-cyan-400 block font-hud">VIBRATION RMS</span>
+          <span className="text-[10px] text-cyan-400 block font-hud font-semibold">VIBRATION RMS</span>
           <div className="flex justify-between mt-1 text-slate-300">
-            <span>Avg: <b>{vibStats.avg.toFixed(0)}</b></span>
-            <span>Max: <b className="text-cyan-300">{vibStats.max.toFixed(0)}</b> mm/s</span>
+            <span>Avg: <b className="text-white font-bold">{vibStats.avg.toFixed(0)}</b></span>
+            <span>Max: <b className="text-cyan-300 font-bold">{vibStats.max.toFixed(0)}</b> mm/s</span>
           </div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-industrial-950/60 border border-industrial-800">
-          <span className="text-[10px] text-rose-400 block font-hud">TEMPERATURE</span>
+          <span className="text-[10px] text-rose-400 block font-hud font-semibold">TEMPERATURE</span>
           <div className="flex justify-between mt-1 text-slate-300">
-            <span>Avg: <b>{tempStats.avg.toFixed(1)}°C</b></span>
-            <span>Max: <b className="text-rose-300">{tempStats.max.toFixed(1)}°C</b></span>
+            <span>Avg: <b className="text-white font-bold">{tempStats.avg.toFixed(1)}°C</b></span>
+            <span>Max: <b className="text-rose-300 font-bold">{tempStats.max.toFixed(1)}°C</b></span>
           </div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-industrial-950/60 border border-industrial-800">
-          <span className="text-[10px] text-amber-400 block font-hud">MOTOR LOAD</span>
+          <span className="text-[10px] text-amber-400 block font-hud font-semibold">MOTOR LOAD</span>
           <div className="flex justify-between mt-1 text-slate-300">
-            <span>Avg: <b>{loadStats.avg.toFixed(0)} A</b></span>
-            <span>Max: <b className="text-amber-300">{loadStats.max.toFixed(0)} A</b></span>
+            <span>Avg: <b className="text-white font-bold">{loadStats.avg.toFixed(0)} A</b></span>
+            <span>Max: <b className="text-amber-300 font-bold">{loadStats.max.toFixed(0)} A</b></span>
           </div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-industrial-950/60 border border-industrial-800">
-          <span className="text-[10px] text-emerald-400 block font-hud">SPEED STABILITY</span>
+          <span className="text-[10px] text-emerald-400 block font-hud font-semibold">RPM STABILITY</span>
           <div className="flex justify-between mt-1 text-slate-300">
-            <span>Avg: <b>{rpmStats.avg.toFixed(0)}</b></span>
-            <span>Max: <b className="text-emerald-300">{rpmStats.max.toFixed(0)}</b> RPM</span>
+            <span>Avg: <b className="text-white font-bold">{rpmStats.avg.toFixed(0)}</b></span>
+            <span>Max: <b className="text-emerald-300 font-bold">{rpmStats.max.toFixed(0)}</b> RPM</span>
           </div>
         </div>
       </div>
