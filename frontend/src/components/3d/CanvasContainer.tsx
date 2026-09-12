@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows, Grid, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Grid, OrbitControls, MeshReflectorMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { useTwin } from "../../context/TwinContext";
 import { TextileMachine } from "./TextileMachine";
+import { HolographicRings } from "./HolographicRings";
+import { FloatingHudLabels } from "./FloatingHudLabels";
+import { DataFlowStreams } from "./DataFlowStreams";
+import { DigitalParticles } from "./DigitalParticles";
 import { CameraPreset, ViewportMode } from "../../types";
+import { soundEffects } from "../../utils/soundEffects";
 import {
   Maximize2,
   Minimize2,
@@ -14,7 +19,15 @@ import {
   Flame,
   Box,
   AlertTriangle,
+  Radio,
+  Eye,
+  Disc,
+  PlayCircle,
 } from "lucide-react";
+
+interface CanvasContainerProps {
+  onReplayIntro?: () => void;
+}
 
 const targetPositions: Record<CameraPreset, [number, number, number]> = {
   isometric: [4.2, 3.2, 4.6],
@@ -34,11 +47,12 @@ const lookAtTargets: Record<CameraPreset, [number, number, number]> = {
   top: [0, 0.5, 0],
 };
 
-// Camera Rig for smooth animated camera transitions between presets without fighting OrbitControls
+// Camera Rig for smooth cinematic camera transitions between presets
 const CameraController: React.FC<{
   preset: CameraPreset;
   controlsRef: React.RefObject<any>;
-}> = ({ preset, controlsRef }) => {
+  autoOrbit: boolean;
+}> = ({ preset, controlsRef, autoOrbit }) => {
   const isTransitioning = useRef(true);
 
   useEffect(() => {
@@ -49,7 +63,6 @@ const CameraController: React.FC<{
     const controls = controlsRef.current;
     if (!controls) return;
     const handleStart = () => {
-      // User began interacting manually, abort automated lerp
       isTransitioning.current = false;
     };
     controls.addEventListener("start", handleStart);
@@ -59,17 +72,20 @@ const CameraController: React.FC<{
   }, [controlsRef]);
 
   useFrame(({ camera }) => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = autoOrbit && !isTransitioning.current;
+      controlsRef.current.autoRotateSpeed = 0.8;
+    }
+
     if (!isTransitioning.current || !controlsRef.current) return;
 
     const desiredPos = new THREE.Vector3(...targetPositions[preset]);
     const desiredLook = new THREE.Vector3(...lookAtTargets[preset]);
 
-    // Smooth lerp camera position and OrbitControls target
     camera.position.lerp(desiredPos, 0.08);
     controlsRef.current.target.lerp(desiredLook, 0.08);
     controlsRef.current.update();
 
-    // Check if transition has arrived near target
     if (
       camera.position.distanceTo(desiredPos) < 0.03 &&
       controlsRef.current.target.distanceTo(desiredLook) < 0.03
@@ -81,7 +97,7 @@ const CameraController: React.FC<{
   return null;
 };
 
-export const CanvasContainer: React.FC = () => {
+export const CanvasContainer: React.FC<CanvasContainerProps> = ({ onReplayIntro }) => {
   const {
     displayTelemetry,
     cameraPreset,
@@ -97,6 +113,12 @@ export const CanvasContainer: React.FC = () => {
   const controlsRef = useRef<any>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Viewport Feature Toggles
+  const [showHoloRings, setShowHoloRings] = useState(true);
+  const [showHudLabels, setShowHudLabels] = useState(true);
+  const [autoOrbit, setAutoOrbit] = useState(false);
+
+  // Fullscreen state listener
   useEffect(() => {
     const handleFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -105,21 +127,45 @@ export const CanvasContainer: React.FC = () => {
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
+  // Phase 8: ESC key listener to return to isometric overview and reset component focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setCameraPreset("isometric");
+        setSelectedComponent(null);
+        soundEffects.playHoverTick();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setCameraPreset, setSelectedComponent]);
+
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => { });
+      containerRef.current.requestFullscreen().catch(() => {});
     } else {
-      document.exitFullscreen().catch(() => { });
+      document.exitFullscreen().catch(() => {});
     }
+  };
+
+  const handleModeChange = (mode: ViewportMode) => {
+    soundEffects.playModeSwitch();
+    setViewportMode(mode);
+  };
+
+  const handleResetView = () => {
+    soundEffects.playHoverTick();
+    setCameraPreset("isometric");
+    setSelectedComponent(null);
   };
 
   const statusColor =
     telemetry?.overall_status === "Healthy"
-      ? "text-cyber-emerald border-cyber-emerald/50"
+      ? "text-[#00ff88] border-[#00ff88]/50"
       : telemetry?.overall_status === "Warning"
-        ? "text-cyber-amber border-cyber-amber/50"
-        : "text-cyber-crimson border-cyber-crimson/50";
+      ? "text-[#fbbf24] border-[#fbbf24]/50"
+      : "text-[#ef4444] border-[#ef4444]/50";
 
   const rpmText = (telemetry?.sensors?.rpm ?? 0).toFixed(0);
   const vibText = (telemetry?.sensors?.vibration ?? 0).toFixed(0);
@@ -133,9 +179,9 @@ export const CanvasContainer: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-[440px] rounded-2xl overflow-hidden glass-panel border border-industrial-700/60 shadow-panel flex flex-col`}
+      className="relative w-full h-full min-h-[460px] rounded-2xl overflow-hidden glass-panel border border-industrial-700/60 shadow-panel flex flex-col font-sans"
     >
-      {/* Active Component Failure Banner (Phase 1) */}
+      {/* Active Component Failure Banner */}
       {failingCompEntry && failingCompEntry[1] && (
         <div className="absolute top-14 left-4 right-4 z-20 flex items-center justify-between px-3.5 py-2 rounded-xl bg-red-950/90 border border-red-500/80 shadow-glow-red backdrop-blur-md animate-pulse">
           <div className="flex items-center gap-2 text-xs font-hud text-red-200 uppercase tracking-wider">
@@ -144,7 +190,10 @@ export const CanvasContainer: React.FC = () => {
             <span className="text-red-400 font-mono">| RUL: {failingCompEntry[1].remaining_useful_life_days ?? 45}d ({failingCompEntry[1].remaining_useful_life_hours ?? 1080}h)</span>
           </div>
           <button
-            onClick={() => setSelectedComponent(failingCompEntry[0])}
+            onClick={() => {
+              soundEffects.playInspectionSound();
+              setSelectedComponent(failingCompEntry[0]);
+            }}
             className="text-xs font-hud uppercase px-2.5 py-0.5 rounded bg-red-800 text-white hover:bg-red-700 transition font-medium"
           >
             Isolate Component
@@ -154,14 +203,15 @@ export const CanvasContainer: React.FC = () => {
 
       {/* 3D Viewport Top HUD Bar */}
       <div className="absolute top-3 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
+        {/* Left: 3D Twin Status Pill */}
         <div className="flex items-center gap-3 bg-industrial-900/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-industrial-700/60 pointer-events-auto">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
             </span>
-            <span className="font-hud text-xs tracking-wider text-cyan-300 uppercase">
-              3D Machine Visualization
+            <span className="font-sans font-bold text-xs tracking-wider text-cyan-300 uppercase">
+              Omniverse 3D Twin
             </span>
           </div>
           <div className="h-3.5 w-px bg-industrial-700" />
@@ -172,97 +222,155 @@ export const CanvasContainer: React.FC = () => {
             <>
               <div className="h-3.5 w-px bg-industrial-700" />
               <button
-                onClick={() => setSelectedComponent(null)}
-                className="text-xs text-cyan-400 hover:text-white uppercase font-hud flex items-center gap-1"
+                onClick={handleResetView}
+                className="text-xs text-cyan-400 hover:text-white uppercase font-mono flex items-center gap-1 font-semibold"
               >
-                Selected: {selectedComponent.replace("_", " ")} [×]
+                Selected: {selectedComponent.replace("_", " ")} [ESC]
               </button>
             </>
           )}
         </div>
 
-        {/* Viewport Control Actions */}
+        {/* Right: Viewport Controls & Feature Toggles */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Viewport Mode Switcher (Standard 3D / Thermal Heat Map / Wireframe Analysis) */}
+          {/* Viewport Mode Switcher */}
           <div className="flex items-center bg-industrial-900/90 border border-industrial-700/80 rounded-xl p-0.5 backdrop-blur-md">
             <button
-              onClick={() => setViewportMode("standard")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "standard"
+              onClick={() => handleModeChange("standard")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
+                viewportMode === "standard"
                   ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-glow-cyan"
                   : "text-slate-400 hover:text-slate-200"
-                }`}
+              }`}
               title="Standard 3D View"
             >
               <Box className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Standard 3D</span>
+              <span className="hidden sm:inline">Standard</span>
             </button>
 
             <button
-              onClick={() => setViewportMode("thermal")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "thermal"
+              onClick={() => handleModeChange("thermal")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
+                viewportMode === "thermal"
                   ? "bg-amber-500/25 text-amber-300 border border-amber-400/40 shadow-glow-amber"
                   : "text-slate-400 hover:text-slate-200"
-                }`}
+              }`}
               title="Thermal Heat Map Mode"
             >
               <Flame className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Thermal Heat Map</span>
+              <span className="hidden sm:inline">Thermal</span>
             </button>
 
             <button
-              onClick={() => setViewportMode("wireframe")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "wireframe"
+              onClick={() => handleModeChange("wireframe")}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
+                viewportMode === "wireframe"
                   ? "bg-purple-500/25 text-purple-300 border border-purple-400/40"
                   : "text-slate-400 hover:text-slate-200"
-                }`}
+              }`}
               title="Wireframe Analysis Mode"
             >
               <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Wireframe Analysis</span>
+              <span className="hidden sm:inline">Wireframe</span>
             </button>
           </div>
 
+          {/* Cinematic Toggles Group */}
+          <div className="hidden md:flex items-center bg-industrial-900/90 border border-industrial-700/80 rounded-xl p-0.5 backdrop-blur-md">
+            {/* Holographic Rings Toggle */}
+            <button
+              onClick={() => setShowHoloRings(!showHoloRings)}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
+                showHoloRings ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Toggle Holographic Rings"
+            >
+              <Disc className="w-3.5 h-3.5" />
+              <span>Holo</span>
+            </button>
+
+            {/* HUD Labels Toggle */}
+            <button
+              onClick={() => setShowHudLabels(!showHudLabels)}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
+                showHudLabels ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Toggle Floating HUD Labels"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>HUD</span>
+            </button>
+
+            {/* Auto-Orbit Turntable Toggle */}
+            <button
+              onClick={() => setAutoOrbit(!autoOrbit)}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
+                autoOrbit ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Toggle Cinematic Auto-Orbit"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Orbit</span>
+            </button>
+          </div>
+
+          {/* Replay Intro Button */}
+          {onReplayIntro && (
+            <button
+              onClick={() => {
+                soundEffects.playHoverTick();
+                onReplayIntro();
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-industrial-900/80 border border-cyan-500/40 text-cyan-300 hover:text-white hover:border-cyan-300 backdrop-blur-md transition flex items-center gap-1 text-xs font-mono font-medium shadow-glow-cyan"
+              title="Replay Cinematic Startup Sequence"
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Intro</span>
+            </button>
+          )}
+
+          {/* Reset View Button */}
           <button
-            onClick={() => {
-              setCameraPreset("isometric");
-              setSelectedComponent(null);
-            }}
+            onClick={handleResetView}
             className="p-2 rounded-xl bg-industrial-900/80 border border-industrial-700 text-slate-400 hover:text-cyan-300 backdrop-blur-md transition"
-            title="Isometric Overview"
+            title="Reset to Isometric Overview [Esc]"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
 
+          {/* Toggle Fullscreen */}
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-xl bg-industrial-900/80 border border-industrial-700 text-slate-400 hover:text-cyan-300 backdrop-blur-md transition"
             title="Toggle Fullscreen"
           >
-            {isFullscreen ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
-      {/* Thermal Heat Map Gradient Legend */}
+      {/* Phase 9: Thermal Heat Map Gradient Legend */}
       {viewportMode === "thermal" && (
         <div className="absolute top-16 right-4 z-10 bg-industrial-950/90 border border-amber-500/40 rounded-xl p-3 backdrop-blur-md shadow-xl text-xs pointer-events-auto">
-          <div className="text-[11px] font-hud text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <div className="text-[11px] font-sans font-bold text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>Thermal Gradient (°C)</span>
+            <span>Thermal Vision Gradient (°C)</span>
           </div>
-          <div className="h-3 w-44 rounded-md bg-gradient-to-r from-blue-600 via-emerald-500 via-amber-500 to-red-600 border border-industrial-700 shadow-inner" />
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
+          <div className="h-3 w-48 rounded-md bg-gradient-to-r from-[#0077b6] via-[#10b981] via-[#eab308] via-[#f97316] to-[#ff0055] border border-industrial-700 shadow-inner" />
+          <div className="flex justify-between text-[10px] text-slate-300 font-mono mt-1 font-semibold">
             <span>&lt;35° Cool</span>
             <span>45° Norm</span>
             <span>55° Warm</span>
-            <span>&gt;65° Hot</span>
+            <span>65° Hot</span>
+            <span>&gt;65° Crit</span>
           </div>
         </div>
       )}
+
+      {/* Double Click Inspection Hint */}
+      <div className="absolute top-16 left-4 z-10 hidden sm:flex items-center gap-2 bg-industrial-950/70 border border-industrial-800/80 rounded-lg px-2.5 py-1 text-[10px] font-mono text-slate-400 backdrop-blur-md pointer-events-none">
+        <span>Tip: Double-click component to inspect • Press [ESC] to reset overview</span>
+      </div>
 
       {/* 3D WebGL Canvas */}
       <div className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
@@ -270,9 +378,21 @@ export const CanvasContainer: React.FC = () => {
           shadows
           camera={{ position: [4.2, 3.2, 4.6], fov: 42 }}
           gl={{ antialias: true, alpha: true }}
+          onCreated={({ gl }) => {
+            gl.toneMapping = THREE.ACESFilmicToneMapping;
+            gl.toneMappingExposure = 1.25;
+          }}
           className="w-full h-full"
         >
-          <CameraController preset={cameraPreset} controlsRef={controlsRef} />
+          {/* Volumetric Depth Fog blending into deep cyber space */}
+          <fog attach="fog" args={["#020617", 8, 26]} />
+
+          <CameraController
+            preset={cameraPreset}
+            controlsRef={controlsRef}
+            autoOrbit={autoOrbit}
+          />
+
           <OrbitControls
             ref={controlsRef}
             makeDefault
@@ -284,41 +404,76 @@ export const CanvasContainer: React.FC = () => {
             target={[0, 0.9, 0]}
           />
 
-          {/* Industrial Cyber Lighting */}
-          <ambientLight intensity={viewportMode === "thermal" ? 0.85 : 0.65} color="#cbd5e1" />
+          {/* Phase 3: Premium Industrial Lighting (HDR Style Contrast & Rim Lights) */}
+          <ambientLight intensity={viewportMode === "thermal" ? 0.75 : 0.55} color="#94a3b8" />
           <directionalLight
-            position={[6, 8, 5]}
-            intensity={1.6}
+            position={[6, 9, 5]}
+            intensity={1.8}
             castShadow
-            shadow-mapSize={[1024, 1024]}
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0001}
             color="#ffffff"
           />
-          <directionalLight position={[-6, 4, -4]} intensity={0.8} color="#38bdf8" />
-          <pointLight position={[0, 3, 0]} intensity={1.2} color="#00f0ff" distance={8} />
+          {/* Grazing Rim Lights (Cyan contour & Blue fill) */}
+          <directionalLight position={[-7, 5, -5]} intensity={1.2} color="#00f0ff" />
+          <directionalLight position={[7, 4, -6]} intensity={0.9} color="#3b82f6" />
+          <pointLight position={[0, 2.8, 0.55]} intensity={1.5} color="#00f0ff" distance={8} />
 
-          {/* Ground Contact Shadows & Grid */}
+          {/* Phase 2: Next-Gen Reflective Digital Twin Stage Ground */}
+          <mesh position={[0, -0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <planeGeometry args={[22, 22]} />
+            <MeshReflectorMaterial
+              blur={[300, 100]}
+              resolution={512}
+              mixBlur={1}
+              mixStrength={40}
+              roughness={0.7}
+              depthScale={1.2}
+              minDepthThreshold={0.4}
+              maxDepthThreshold={1.4}
+              color="#050b14"
+              metalness={0.65}
+              mirror={0.35}
+            />
+          </mesh>
+
+          {/* Ground Contact Shadows & Cyber Grid */}
           <ContactShadows
             position={[0, 0, 0]}
-            opacity={0.7}
+            opacity={0.75}
             scale={10}
-            blur={2.0}
+            blur={2.2}
             far={4}
             color="#020617"
           />
+
+          {/* Dual-layer cyber grid */}
           <Grid
-            position={[0, -0.01, 0]}
-            args={[14, 14]}
+            position={[0, 0.001, 0]}
+            args={[16, 16]}
             cellSize={0.5}
-            cellThickness={0.7}
+            cellThickness={0.8}
             cellColor="#1e293b"
-            sectionSize={2.0}
-            sectionThickness={1.2}
+            sectionSize={2.5}
+            sectionThickness={1.4}
             sectionColor="#00f0ff"
-            fadeDistance={10}
-            fadeStrength={1.5}
+            fadeDistance={11}
+            fadeStrength={1.6}
           />
 
-          {/* Textile Machine Model */}
+          {/* Phase 7: Live Digital Particles (Atmospheric cyber dust) */}
+          <DigitalParticles />
+
+          {/* Phase 7: Live Energy Flow Streams (Transmission pulses) */}
+          <DataFlowStreams />
+
+          {/* Phase 4: Holographic Machine Interface Rings */}
+          <HolographicRings visible={showHoloRings} />
+
+          {/* Phase 6: Floating Iron Man HUD Labels */}
+          <FloatingHudLabels visible={showHudLabels} />
+
+          {/* 3D Textile Machine Sub-Assemblies */}
           <TextileMachine />
         </Canvas>
       </div>
@@ -339,6 +494,7 @@ export const CanvasContainer: React.FC = () => {
             <button
               key={item.id}
               onClick={() => {
+                soundEffects.playHoverTick();
                 setCameraPreset(item.id);
                 if (item.id === "motor") setSelectedComponent("main_motor");
                 else if (item.id === "bearings") setSelectedComponent("bearings");
@@ -346,10 +502,11 @@ export const CanvasContainer: React.FC = () => {
                 else if (item.id === "belt") setSelectedComponent("belt_system");
                 else setSelectedComponent(null);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-hud font-medium transition tracking-wider ${cameraPreset === item.id
+              className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition tracking-wider ${
+                cameraPreset === item.id
                   ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 shadow-glow-cyan"
                   : "text-slate-400 hover:text-slate-200 hover:bg-industrial-800/60"
-                }`}
+              }`}
             >
               {item.label}
             </button>
@@ -361,7 +518,7 @@ export const CanvasContainer: React.FC = () => {
           className={`hidden md:flex items-center gap-2 bg-industrial-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border ${statusColor} pointer-events-auto`}
         >
           <Activity className="w-3.5 h-3.5 animate-pulse" />
-          <span className="text-xs font-hud tracking-wide font-bold">
+          <span className="text-xs font-sans tracking-wide font-extrabold">
             STATUS: {telemetry?.overall_status?.toUpperCase() || "CONNECTING"}
           </span>
           <span className="text-xs font-mono font-extrabold">
@@ -372,4 +529,3 @@ export const CanvasContainer: React.FC = () => {
     </div>
   );
 };
-

@@ -5,6 +5,7 @@ import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { LandingHero } from "./components/landing/LandingHero";
 import { CanvasContainer } from "./components/3d/CanvasContainer";
+import { CinematicIntro } from "./components/intro/CinematicIntro";
 import { LiveSensorPanel } from "./components/dashboard/LiveSensorPanel";
 import { MachineOverview } from "./components/dashboard/MachineOverview";
 import { WaveformOscilloscope } from "./components/dashboard/WaveformOscilloscope";
@@ -24,11 +25,37 @@ import { ErrorBoundary } from "./components/common/ErrorBoundary";
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<"landing" | "dashboard">("dashboard");
   const { activeTab } = useTwin();
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !sessionStorage.getItem("mhm_intro_completed");
+    }
+    return true;
+  });
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("mhm_intro_completed", "true");
+    }
+  };
+
+  const handleReplayIntro = () => {
+    setShowIntro(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-industrial-950 text-slate-100 font-sans selection:bg-cyan-400 selection:text-industrial-950 crt-grid">
+      {/* Phase 1: Cinematic Startup Experience */}
+      <AnimatePresence>
+        {showIntro && <CinematicIntro onComplete={handleIntroComplete} />}
+      </AnimatePresence>
+
       {/* Top Header Bar */}
-      <Header currentView={currentView} onViewChange={setCurrentView} />
+      <Header
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onReplayIntro={handleReplayIntro}
+      />
 
       {/* Main Viewport Container */}
       <main className="flex-1 w-full max-w-[1720px] mx-auto p-4 sm:p-6 space-y-6">
@@ -71,7 +98,7 @@ const AppContent: React.FC = () => {
                     {/* Center / Right: Interactive 3D Digital Twin Canvas (Phase 1 & Phase 8: Thermal Heatmap) */}
                     <div className="lg:col-span-9 h-[540px]">
                       <ErrorBoundary fallbackTitle="3D Digital Twin Canvas">
-                        <CanvasContainer />
+                        <CanvasContainer onReplayIntro={handleReplayIntro} />
                       </ErrorBoundary>
                     </div>
                   </div>

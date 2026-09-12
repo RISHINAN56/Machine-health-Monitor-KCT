@@ -1,11 +1,12 @@
 import React, { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+
 import * as THREE from "three";
 import { useTwin } from "../../context/TwinContext";
-import { Html } from "@react-three/drei";
+import { soundEffects } from "../../utils/soundEffects";
 
 export const TextileMachine: React.FC = () => {
-  const { displayTelemetry, selectedComponent, setSelectedComponent, wireframeMode, viewportMode } = useTwin();
+  const { displayTelemetry, selectedComponent, setSelectedComponent, wireframeMode, viewportMode, setCameraPreset } = useTwin();
 
   // References for dynamic animated sub-assemblies
   const machineRootRef = useRef<THREE.Group>(null);
@@ -32,12 +33,25 @@ export const TextileMachine: React.FC = () => {
     document.body.style.cursor = "auto";
   };
 
-  // Thermal Heat Map gradient color calculator
+  // Phase 8 & 12: Double-click component inspection
+  const handleComponentDoubleClick = (compKey: string, preset: any) => {
+    soundEffects.playInspectionSound();
+    setSelectedComponent(compKey);
+    setCameraPreset(preset);
+  };
+
+  // Phase 9: Multi-stop Thermal Heat Map gradient
+  // Blue -> Cool (<35)
+  // Green -> Normal (35-45)
+  // Yellow -> Warm (45-55)
+  // Orange -> Hot (55-65)
+  // Red -> Critical (>65)
   const getThermalColor = (temp: number) => {
-    if (temp < 35) return "#0284c7"; // Cool Blue
-    if (temp < 48) return "#10b981"; // Normal Green
-    if (temp < 62) return "#f59e0b"; // Warm Amber
-    return "#ef4444"; // Hot Red
+    if (temp < 35) return "#0077b6"; // Cool Blue
+    if (temp < 45) return "#10b981"; // Normal Green
+    if (temp < 55) return "#eab308"; // Warm Yellow
+    if (temp < 65) return "#f97316"; // Hot Orange
+    return "#ff0055"; // Critical Red
   };
 
   // Animation Loop (60 FPS)
@@ -82,11 +96,12 @@ export const TextileMachine: React.FC = () => {
     }
   });
 
-  // Dynamic visual material properties helper for component states
+  // Phase 5: Intelligent Component Visualization (Neon Green, Electric Blue, Amber, Red)
   const getComponentVisuals = (compKey: string, defaultColor: string) => {
     const comp = componentsHealth ? componentsHealth[compKey] : null;
     const isCompSelected = selectedComponent === compKey;
     const isFailing = comp?.is_failing || (comp?.health_score !== undefined && comp.health_score < 50);
+    const score = comp?.health_score ?? healthScore;
     const temp = comp?.temperature ?? telemetry?.sensors?.temperature ?? 32;
 
     if (viewportMode === "thermal") {
@@ -94,27 +109,38 @@ export const TextileMachine: React.FC = () => {
       return {
         color: thermalColor,
         emissive: thermalColor,
-        emissiveIntensity: 0.65,
+        emissiveIntensity: 0.7,
         wireframe: false,
       };
     }
 
     if (isFailing) {
-      // Flashing Red 3D failure state (Phase 1)
       return {
         color: "#dc2626",
-        emissive: "#ef4444",
-        emissiveIntensity: 0.85,
+        emissive: "#ff0055",
+        emissiveIntensity: 0.9,
         wireframe: wireframeMode,
       };
     }
 
-    const glow = comp?.glow_color ?? (healthScore > 75 ? "#10b981" : healthScore > 50 ? "#f59e0b" : "#ef4444");
+    // Phase 5 color mapping:
+    // Excellent (>= 85): Neon Green
+    // Good (70-85): Electric Blue
+    // Attention Needed (50-70): Amber
+    // Critical (< 50): Red
+    let glowColor = "#00ff88"; // Neon Green
+    if (score < 50) {
+      glowColor = "#ff0055"; // Red
+    } else if (score < 70) {
+      glowColor = "#ffb703"; // Amber
+    } else if (score < 85) {
+      glowColor = "#00e5ff"; // Electric Blue
+    }
 
     return {
       color: isCompSelected ? "#38bdf8" : defaultColor,
-      emissive: glow,
-      emissiveIntensity: isCompSelected ? 0.75 : 0.22,
+      emissive: glowColor,
+      emissiveIntensity: isCompSelected ? 0.8 : 0.25,
       wireframe: wireframeMode,
     };
   };
@@ -186,6 +212,10 @@ export const TextileMachine: React.FC = () => {
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("main_motor") ? null : "main_motor");
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          handleComponentDoubleClick("main_motor", "motor");
         }}
       >
         {/* Motor Stator Body with Cooling Fins */}
@@ -263,18 +293,7 @@ export const TextileMachine: React.FC = () => {
           </group>
         </group>
 
-        {/* Floating Live 3D Badge */}
-        {(isSelected("main_motor") || componentsHealth?.["main_motor"]?.is_failing) && (
-          <Html position={[0, 0.65, 0]} center style={{ pointerEvents: "none" }}>
-            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["main_motor"]?.is_failing
-                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
-                : "bg-industrial-900/90 text-cyan-200 border border-cyan-400/80 shadow-glow-cyan"
-              }`}>
-              {componentsHealth?.["main_motor"]?.is_failing ? "⚠️ MOTOR OVERLOAD FAILURE | " : "MOTOR | "}
-              {motorTemp}°C | {motorLoad}A | RUL: {componentsHealth?.["main_motor"]?.remaining_useful_life_days ?? 45}d
-            </div>
-          </Html>
-        )}
+
       </group>
 
       {/* ========================================================= */}
@@ -287,6 +306,10 @@ export const TextileMachine: React.FC = () => {
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("belt_system") ? null : "belt_system");
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          handleComponentDoubleClick("belt_system", "belt");
         }}
       >
         {/* Upper Driven Pulley */}
@@ -337,17 +360,7 @@ export const TextileMachine: React.FC = () => {
           />
         </mesh>
 
-        {(isSelected("belt_system") || componentsHealth?.["belt_system"]?.is_failing) && (
-          <Html position={[0, 0.7, 0]} center style={{ pointerEvents: "none" }}>
-            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["belt_system"]?.is_failing
-                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
-                : "bg-industrial-900/90 text-cyan-200 border border-cyan-400"
-              }`}>
-              {componentsHealth?.["belt_system"]?.is_failing ? "⚠️ BELT SLIPPAGE | " : "BELT DRIVE | "}
-              STRESS: {componentsHealth?.["belt_system"]?.stress_level ?? 25}%
-            </div>
-          </Html>
-        )}
+
       </group>
 
       {/* ========================================================= */}
@@ -363,6 +376,10 @@ export const TextileMachine: React.FC = () => {
           onClick={(e) => {
             e.stopPropagation();
             setSelectedComponent(isSelected("drive_shaft") ? null : "drive_shaft");
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            handleComponentDoubleClick("drive_shaft", "motor");
           }}
         >
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -402,6 +419,10 @@ export const TextileMachine: React.FC = () => {
               e.stopPropagation();
               setSelectedComponent(isSelected("bearings") ? null : "bearings");
             }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              handleComponentDoubleClick("bearings", "bearings");
+            }}
           >
             {/* Pillow Block Cast Housing */}
             <mesh castShadow>
@@ -423,18 +444,7 @@ export const TextileMachine: React.FC = () => {
           </group>
         ))}
 
-        {/* Floating Bearing HUD Badge */}
-        {(isSelected("bearings") || componentsHealth?.["bearings"]?.is_failing) && (
-          <Html position={[0.55, 0.45, 0]} center style={{ pointerEvents: "none" }}>
-            <div className={`px-2.5 py-1.5 rounded-lg text-xs font-hud whitespace-nowrap shadow-lg ${componentsHealth?.["bearings"]?.is_failing
-                ? "bg-red-950/95 text-red-200 border border-red-500 animate-pulse"
-                : "bg-industrial-900/90 text-amber-300 border border-amber-400 shadow-glow-amber"
-              }`}>
-              {componentsHealth?.["bearings"]?.is_failing ? "⚠️ CRITICAL BEARING WEAR | " : "BEARINGS | "}
-              {bearingVib} mm/s RMS | RUL: {componentsHealth?.["bearings"]?.remaining_useful_life_days ?? 60}d
-            </div>
-          </Html>
-        )}
+
       </group>
 
       {/* ========================================================= */}
@@ -447,6 +457,10 @@ export const TextileMachine: React.FC = () => {
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("loom_section") ? null : "loom_section");
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          handleComponentDoubleClick("loom_section", "loom");
         }}
       >
         {/* Reciprocating Heald Harness Frames */}
@@ -522,6 +536,10 @@ export const TextileMachine: React.FC = () => {
         onClick={(e) => {
           e.stopPropagation();
           setSelectedComponent(isSelected("power_unit") ? null : "power_unit");
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          handleComponentDoubleClick("power_unit", "top");
         }}
       >
         <mesh castShadow>
