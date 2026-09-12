@@ -12,10 +12,11 @@ import {
   WorkOrder,
   WorkOrderStatus,
 } from "../types";
-import {
-  generateMachineTelemetryPacket,
-  REAL_WORLD_MACHINES,
-} from "../data/machinesData";
+import { generateMachineTelemetryPacket } from "../data/machines";
+import { apiService } from "../services/apiService";
+import { TelemetryWebSocketManager } from "../services/telemetryWs";
+import { playAlertChime } from "../utils/alertAudio";
+import { APP_CONFIG } from "../config/constants";
 
 interface TwinContextType {
   telemetry: TelemetryPacket | null;
@@ -68,13 +69,13 @@ interface TwinContextType {
 const TwinContext = createContext<TwinContextType | null>(null);
 
 export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeMachineId, setActiveMachineId] = useState<string>("picanol");
+  const [activeMachineId, setActiveMachineId] = useState<string>(APP_CONFIG.DEFAULT_MACHINE_ID);
   const [activeScenario, setActiveScenario] = useState<SimulationScenario>("normal");
   const [telemetry, setTelemetry] = useState<TelemetryPacket | null>(() =>
-    generateMachineTelemetryPacket("picanol", "normal")
+    generateMachineTelemetryPacket(APP_CONFIG.DEFAULT_MACHINE_ID, "normal")
   );
   const [history, setHistory] = useState<TelemetryPacket[]>(() => [
-    generateMachineTelemetryPacket("picanol", "normal"),
+    generateMachineTelemetryPacket(APP_CONFIG.DEFAULT_MACHINE_ID, "normal"),
   ]);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
@@ -90,7 +91,29 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [fleet, setFleet] = useState<FleetOverview | null>(null);
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
 
-  // 2-Second Simulated WebSocket Real-Time Telemetry Updates (RPM, Temp, Health, Energy, Production)
+  // AI Assistant State
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
+    {
+      id: "welcome-1",
+      sender: "ai",
+      text: "Industrial AI Copilot online. Telemetry grounded for Picanol OmniPlus Loom. Ask about vibration signatures, RUL, thermal anomalies, or SOP procedures.",
+      timestamp: new Date().toLocaleTimeString(),
+      confidence: 0.99,
+    },
+  ]);
+
+  // Historical Playback Scrubber State
+  const [isPlaybackMode, setIsPlaybackMode] = useState(false);
+  const [playbackHistory, setPlaybackHistory] = useState<TelemetryPacket[]>([]);
+  const [playbackIndex, setPlaybackIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+
+  const wsManagerRef = useRef<TelemetryWebSocketManager | null>(null);
+  const previousAlertCount = useRef(0);
+
+  // 1. Simulated Fallback Telemetry (triggers if WS disconnected)
   useEffect(() => {
     const timer = setInterval(() => {
       setTelemetry((prev) => {
@@ -104,195 +127,55 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       setHistory((prev) => {
         const nextPacket = generateMachineTelemetryPacket(activeMachineId, activeScenario);
-        return [...prev.slice(-240), nextPacket];
+        return [...prev.slice(-APP_CONFIG.MAX_HISTORY_LENGTH), nextPacket];
       });
-    }, 2000);
+    }, APP_CONFIG.TELEMETRY_INTERVAL_MS);
 
     return () => clearInterval(timer);
   }, [activeMachineId, activeScenario]);
 
-  const handleSetActiveMachineId = (id: string) => {
-    setActiveMachineId(id);
-    const packet = generateMachineTelemetryPacket(id, activeScenario);
-    setTelemetry(packet);
-    setHistory((prev) => [...prev.slice(-240), packet]);
-  };
-
-  // AI Assistant state
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
-    {
-      id: "welcome-1",
-      sender: "ai",
-      text: "Industrial AI Copilot online. Telemetry grounded for Picanol OmniPlus Loom. Ask about vibration signatures, RUL, thermal anomalies, or SOP procedures.",
-      timestamp: new Date().toLocaleTimeString(),
-      confidence: 0.99,
-    },
-  ]);
-
-  // Historical Playback state
-  const [isPlaybackMode, setIsPlaybackMode] = useState(false);
-  const [playbackHistory, setPlaybackHistory] = useState<TelemetryPacket[]>([]);
-  const [playbackIndex, setPlaybackIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const useDirectBackendWs = useRef(false);
-  const previousAlertCount = useRef(0);
-
-  // Sync wireframeMode with viewportMode
-  const handleSetViewportMode = (mode: ViewportMode) => {
-    setViewportMode(mode);
-    setWireframeMode(mode === "wireframe");
-  };
-
-  const handleSetWireframe = (val: boolean | ((prev: boolean) => boolean)) => {
-    setWireframeMode((prev) => {
-      const next = typeof val === "function" ? val(prev) : val;
-      if (next) setViewportMode("wireframe");
-      else if (viewportMode === "wireframe") setViewportMode("standard");
-      return next;
-    });
-  };
-
-  // Web Audio chime generator for industrial plant alerts
-  const playAlertChime = (isCrit: boolean) => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (isCrit) {
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.35);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } else {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      }
-    } catch {
-      // Audio context blocked by browser until user gesture
-    }
-  };
-
-  // Connect WebSocket
+  // 2. Resilient WebSocket Ingestion
   useEffect(() => {
-    let unmounted = false;
+    const manager = new TelemetryWebSocketManager(
+      (packet) => {
+        setTelemetry(packet);
+        setActiveScenario(packet.scenario);
+        setHistory((prev) => [...prev.slice(-APP_CONFIG.MAX_HISTORY_LENGTH), packet]);
+      },
+      (connected) => {
+        setIsConnected(connected);
+      }
+    );
 
-    const connectWebSocket = () => {
-      if (unmounted) return;
-
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.hostname || "localhost";
-      const wsUrl = useDirectBackendWs.current
-        ? `${protocol}//${host}:8000/ws/telemetry`
-        : `${protocol}//${window.location.host}/ws/telemetry`;
-
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        if (unmounted) return;
-        setIsConnected(true);
-      };
-
-      ws.onmessage = (event) => {
-        if (unmounted) return;
-        try {
-          const data = JSON.parse(event.data);
-          if (data && data.overall_health_score !== undefined) {
-            const packet = data as TelemetryPacket;
-            setTelemetry(packet);
-            setActiveScenario(packet.scenario);
-            setHistory((prev) => [...prev.slice(-240), packet]);
-          }
-        } catch {
-          // ignore parse errors
-        }
-      };
-
-      ws.onclose = () => {
-        if (unmounted) return;
-        setIsConnected(false);
-        useDirectBackendWs.current = !useDirectBackendWs.current;
-        reconnectTimeoutRef.current = window.setTimeout(connectWebSocket, 2000);
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      unmounted = true;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (wsRef.current) wsRef.current.close();
-    };
+    wsManagerRef.current = manager;
+    return () => manager.destroy();
   }, []);
 
-  // Poll alerts, work orders, energy & fleet periodically
+  // 3. Auxiliary Data Polling (Alerts, Energy, Fleet, Work Orders)
   useEffect(() => {
-    const fetchAuxiliaryData = async () => {
-      try {
-        const [alertsRes, ordersRes, energyRes, fleetRes] = await Promise.all([
-          fetch("/api/alerts"),
-          fetch("/api/maintenance/work-orders"),
-          fetch("/api/energy"),
-          fetch("/api/fleet"),
-        ]);
-
-        if (alertsRes.ok) {
-          const alertData: AlertEvent[] = await alertsRes.json();
-          setAlerts(alertData);
-
-          if (audioAlertsEnabled && alertData.length > previousAlertCount.current) {
-            const latest = alertData[0];
-            if (latest && !latest.acknowledged) {
-              playAlertChime(latest.severity === "CRITICAL");
-            }
+    const pollAuxData = async () => {
+      const data = await apiService.fetchAuxiliaryData();
+      if (data.alerts) {
+        setAlerts(data.alerts);
+        if (audioAlertsEnabled && data.alerts.length > previousAlertCount.current) {
+          const latest = data.alerts[0];
+          if (latest && !latest.acknowledged) {
+            playAlertChime(latest.severity === "CRITICAL");
           }
-          previousAlertCount.current = alertData.length;
         }
-        if (ordersRes.ok) {
-          const orderData = await ordersRes.json();
-          setWorkOrders(orderData);
-        }
-        if (energyRes.ok) {
-          const energyData: EnergyMetrics = await energyRes.json();
-          setEnergy(energyData);
-        }
-        if (fleetRes.ok) {
-          const fleetData: FleetOverview = await fleetRes.json();
-          setFleet(fleetData);
-        }
-      } catch {
-        // quiet fallback
+        previousAlertCount.current = data.alerts.length;
       }
+      if (data.workOrders) setWorkOrders(data.workOrders);
+      if (data.energy) setEnergy(data.energy);
+      if (data.fleet) setFleet(data.fleet);
     };
 
-    fetchAuxiliaryData();
-    const interval = setInterval(fetchAuxiliaryData, 3000);
+    pollAuxData();
+    const interval = setInterval(pollAuxData, APP_CONFIG.AUXILIARY_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [audioAlertsEnabled]);
 
-  // Playback timer
+  // 4. Historical Playback Scrubber Timer
   useEffect(() => {
     if (!isPlaybackMode || !isPlaying || playbackHistory.length === 0) return;
 
@@ -310,91 +193,59 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(timer);
   }, [isPlaybackMode, isPlaying, playbackHistory.length, playbackSpeed]);
 
-  const startPlayback = (packets?: TelemetryPacket[]) => {
-    const pool = packets && packets.length > 0 ? packets : history;
-    if (pool.length === 0) return;
-    setPlaybackHistory(pool);
-    setPlaybackIndex(0);
-    setIsPlaybackMode(true);
-    setIsPlaying(true);
+  // Actions
+  const handleSetActiveMachineId = (id: string) => {
+    setActiveMachineId(id);
+    const packet = generateMachineTelemetryPacket(id, activeScenario);
+    setTelemetry(packet);
+    setHistory((prev) => [...prev.slice(-APP_CONFIG.MAX_HISTORY_LENGTH), packet]);
   };
 
-  const stopPlayback = () => {
-    setIsPlaybackMode(false);
-    setIsPlaying(false);
+  const handleSetViewportMode = (mode: ViewportMode) => {
+    setViewportMode(mode);
+    setWireframeMode(mode === "wireframe");
   };
 
-  const seekPlayback = (index: number) => {
-    if (index >= 0 && index < playbackHistory.length) {
-      setPlaybackIndex(index);
-    }
-  };
-
-  const togglePlayPause = () => {
-    setIsPlaying((prev) => !prev);
+  const handleSetWireframe = (val: boolean | ((prev: boolean) => boolean)) => {
+    setWireframeMode((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      if (next) setViewportMode("wireframe");
+      else if (viewportMode === "wireframe") setViewportMode("standard");
+      return next;
+    });
   };
 
   const setScenario = async (scenario: SimulationScenario) => {
     setActiveScenario(scenario);
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ action: "set_scenario", scenario }));
-    }
-    try {
-      await fetch("/api/simulation/scenario", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario }),
-      });
-    } catch {
-      // handled via websocket
-    }
+    wsManagerRef.current?.send({ action: "set_scenario", scenario });
+    await apiService.setScenario(scenario);
   };
 
   const acknowledgeAlert = async (alertId: string) => {
-    try {
-      await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "POST" });
+    const success = await apiService.acknowledgeAlert(alertId);
+    if (success) {
       setAlerts((prev) =>
         prev.map((a) => (a.id === alertId ? { ...a, acknowledged: true } : a))
       );
-    } catch (err) {
-      console.error(err);
     }
   };
 
   const createWorkOrder = async (component: string, task: string, priority = "MEDIUM") => {
-    try {
-      const res = await fetch("/api/maintenance/work-orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          component,
-          task_description: task,
-          priority,
-          recommendation_id: telemetry?.ai_prediction ? "AUTO" : undefined,
-        }),
-      });
-      if (res.ok) {
-        const newOrder = await res.json();
-        setWorkOrders((prev) => [newOrder, ...prev]);
-      }
-    } catch (err) {
-      console.error(err);
+    const newOrder = await apiService.createWorkOrder(
+      component,
+      task,
+      priority,
+      telemetry?.ai_prediction ? "AUTO" : undefined
+    );
+    if (newOrder) {
+      setWorkOrders((prev) => [newOrder, ...prev]);
     }
   };
 
   const updateWorkOrderStatus = async (orderId: string, status: WorkOrderStatus) => {
-    try {
-      const res = await fetch(`/api/maintenance/work-orders/${orderId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setWorkOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
-      }
-    } catch (err) {
-      console.error(err);
+    const updated = await apiService.updateWorkOrderStatus(orderId, status);
+    if (updated) {
+      setWorkOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
     }
   };
 
@@ -415,10 +266,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch("/api/ai/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question,
-          machine_id: activeMachineId,
-        }),
+        body: JSON.stringify({ question, machine_id: activeMachineId }),
       });
 
       if (res.ok) {
@@ -458,7 +306,30 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // The telemetry displayed to components & 3D (either live or historical frame)
+  const startPlayback = (packets?: TelemetryPacket[]) => {
+    const pool = packets && packets.length > 0 ? packets : history;
+    if (pool.length === 0) return;
+    setPlaybackHistory(pool);
+    setPlaybackIndex(0);
+    setIsPlaybackMode(true);
+    setIsPlaying(true);
+  };
+
+  const stopPlayback = () => {
+    setIsPlaybackMode(false);
+    setIsPlaying(false);
+  };
+
+  const seekPlayback = (index: number) => {
+    if (index >= 0 && index < playbackHistory.length) {
+      setPlaybackIndex(index);
+    }
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying((prev) => !prev);
+  };
+
   const displayTelemetry =
     isPlaybackMode && playbackHistory[playbackIndex]
       ? playbackHistory[playbackIndex]
@@ -524,4 +395,3 @@ export const useTwin = () => {
   if (!ctx) throw new Error("useTwin must be used within a TwinProvider");
   return ctx;
 };
-

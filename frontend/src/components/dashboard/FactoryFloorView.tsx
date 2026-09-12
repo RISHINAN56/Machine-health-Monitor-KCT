@@ -13,56 +13,26 @@ import {
 } from "lucide-react";
 import { MachineSummary } from "../../types";
 
+import { REAL_MACHINES_LIST } from "../../data/machines";
+
 export const FactoryFloorView: React.FC = () => {
   const { fleet, activeMachineId, setActiveMachineId, setActiveTab, setScenario } = useTwin();
 
-  const machines: MachineSummary[] = [
-    {
-      machine_id: "picanol",
-      name: "PICANOL OMNIPLUS SUMMUM",
-      model: "Picanol Sumo Direct-Drive 190cm",
-      status: "Healthy",
-      health_score: 98.4,
-      rpm: 650.0,
-      temperature: 31.8,
-      vibration: 84.0,
-      scenario: "normal",
-      oee_percentage: 96.8,
-      location: "Bay 1 - High-Speed Weaving Shed",
-      meters_woven_today: 185.4,
-      active_alerts_count: 0,
-    },
-    {
-      machine_id: "toyota",
-      name: "TOYOTA JAT910",
-      model: "Toyota E-Shed Servo Air-Jet 210cm",
-      status: "Healthy",
-      health_score: 96.2,
-      rpm: 680.0,
-      temperature: 32.5,
-      vibration: 92.0,
-      scenario: "normal",
-      oee_percentage: 97.5,
-      location: "Bay 2 - Cleanroom Denim Hall",
-      meters_woven_today: 210.8,
-      active_alerts_count: 0,
-    },
-    {
-      machine_id: "tsudakoma",
-      name: "TSUDAKOMA ZAX001 NEO PLUS",
-      model: "Tsudakoma Box-Frame Heavy Sley 230cm",
-      status: "Warning",
-      health_score: 68.5,
-      rpm: 620.0,
-      temperature: 48.6,
-      vibration: 495.0,
-      scenario: "bearing_wear",
-      oee_percentage: 88.2,
-      location: "Bay 3 - Heavy Technical Filament Bay",
-      meters_woven_today: 144.6,
-      active_alerts_count: 1,
-    },
-  ];
+  const machines: MachineSummary[] = REAL_MACHINES_LIST.map((m) => ({
+    machine_id: m.id,
+    name: m.name,
+    model: `${m.manufacturer} ${m.type}`,
+    status: m.status,
+    health_score: m.healthScore,
+    rpm: m.rpm,
+    temperature: m.temperature,
+    vibration: m.vibration,
+    scenario: m.id === "tsudakoma" ? "bearing_wear" : "normal",
+    oee_percentage: m.efficiency,
+    location: m.location,
+    meters_woven_today: m.metersWovenToday,
+    active_alerts_count: m.activeAlertsCount,
+  }));
 
   const handleSelectMachine = (machine: MachineSummary) => {
     setActiveMachineId(machine.machine_id);
