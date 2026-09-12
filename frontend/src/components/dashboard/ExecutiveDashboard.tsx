@@ -214,19 +214,19 @@ export const ExecutiveDashboard: React.FC = () => {
             <div className="space-y-3 mt-4">
               <div className="p-3 rounded-xl bg-industrial-900/70 border border-industrial-800">
                 <span className="text-[10px] font-hud uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                  Priority 1: Loom C Overhaul
+                  Priority 1: Tsudakoma Bearing Overhaul
                 </span>
                 <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                  Schedule off-shift bearing replacement on LOOM-03 during Saturday morning warp changeover to avoid 8 hours of peak downtime.
+                  Schedule off-shift bearing replacement on TSUDAKOMA ZAX001 during Saturday warp changeover to avoid 8 hours of peak downtime.
                 </p>
               </div>
 
               <div className="p-3 rounded-xl bg-industrial-900/70 border border-industrial-800">
                 <span className="text-[10px] font-hud uppercase px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                  Priority 2: Motor Load Balancing
+                  Priority 2: E-Shed Servo Optimization
                 </span>
                 <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                  Inspect Loom E jacquard harness tensioning to alleviate 3.2A motor overload and trim daily energy dissipation.
+                  Calibrate Toyota JAT910 E-Shed independent servo tensioning to maximize energy savings and trim daily kWh dissipation.
                 </p>
               </div>
             </div>

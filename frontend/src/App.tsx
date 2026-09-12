@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TwinProvider, useTwin } from "./context/TwinContext";
 import { Header } from "./components/layout/Header";
-import { Sidebar } from "./components/layout/Sidebar";
+import { MachineFleetCards } from "./components/dashboard/MachineFleetCards";
+import { SideInfoPanel } from "./components/dashboard/SideInfoPanel";
 import { LandingHero } from "./components/landing/LandingHero";
 import { CanvasContainer } from "./components/3d/CanvasContainer";
 import { CinematicIntro } from "./components/intro/CinematicIntro";
 import { LiveSensorPanel } from "./components/dashboard/LiveSensorPanel";
 import { MachineOverview } from "./components/dashboard/MachineOverview";
 import { WaveformOscilloscope } from "./components/dashboard/WaveformOscilloscope";
-import { PredictionPanel } from "./components/dashboard/PredictionPanel";
+import { AiPredictivePanel } from "./components/dashboard/AiPredictivePanel";
 import { MaintenancePanel } from "./components/dashboard/MaintenancePanel";
 import { AlertTimeline } from "./components/dashboard/AlertTimeline";
 import { HistoricalAnalytics } from "./components/dashboard/HistoricalAnalytics";
@@ -85,18 +86,21 @@ const AppContent: React.FC = () => {
                   {/* Historical Time-Travel Playback Scrubber (Phase 9) */}
                   <HistoricalPlayback />
 
-                  {/* 1. Live Sensor Telemetry Strip */}
+                  {/* 1. Futuristic 3-Machine Fleet Selector Cards */}
+                  <MachineFleetCards />
+
+                  {/* 2. Live Sensor Telemetry Strip */}
                   <LiveSensorPanel />
 
-                  {/* 2. Primary 3D Digital Twin & Scenario Control Split */}
+                  {/* 3. Primary 3D Digital Twin & Side Information Panel Split */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left: Quick Scenario & Component Sidebar (Phase 2: 5 Industrial Failure Modes) */}
-                    <div className="lg:col-span-3">
-                      <Sidebar />
+                    {/* Left: Comprehensive Machine Details & Live Telemetry Panel */}
+                    <div className="lg:col-span-4">
+                      <SideInfoPanel />
                     </div>
 
-                    {/* Center / Right: Interactive 3D Digital Twin Canvas (Phase 1 & Phase 8: Thermal Heatmap) */}
-                    <div className="lg:col-span-9 h-[540px]">
+                    {/* Center / Right: Interactive 3D Digital Twin Canvas */}
+                    <div className="lg:col-span-8 min-h-[660px] h-[700px]">
                       <ErrorBoundary fallbackTitle="3D Digital Twin Canvas">
                         <CanvasContainer onReplayIntro={handleReplayIntro} />
                       </ErrorBoundary>
@@ -119,7 +123,7 @@ const AppContent: React.FC = () => {
                   {/* 5. AI Diagnostics & Prescriptive Maintenance Row (Phase 4: Prescriptions & SOPs) */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-6">
-                      <PredictionPanel />
+                      <AiPredictivePanel />
                     </div>
                     <div className="lg:col-span-6">
                       <MaintenancePanel />

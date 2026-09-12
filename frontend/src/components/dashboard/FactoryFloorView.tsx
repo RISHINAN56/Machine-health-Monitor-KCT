@@ -16,94 +16,62 @@ import { MachineSummary } from "../../types";
 export const FactoryFloorView: React.FC = () => {
   const { fleet, activeMachineId, setActiveMachineId, setActiveTab, setScenario } = useTwin();
 
-  const machines: MachineSummary[] = fleet?.machines || [
+  const machines: MachineSummary[] = [
     {
-      machine_id: "LOOM-01",
-      name: "Air-Jet Loom A",
-      model: "Picanol OmniPlus-i 190cm",
+      machine_id: "picanol",
+      name: "PICANOL OMNIPLUS SUMMUM",
+      model: "Picanol Sumo Direct-Drive 190cm",
       status: "Healthy",
       health_score: 98.4,
-      rpm: 665.0,
-      temperature: 32.4,
-      vibration: 82.0,
-      scenario: "normal",
-      oee_percentage: 97.2,
-      location: "Bay 1 - Weaving Shed North",
-      meters_woven_today: 184.2,
-      active_alerts_count: 0,
-    },
-    {
-      machine_id: "LOOM-02",
-      name: "Air-Jet Loom B",
-      model: "Picanol OmniPlus-i 190cm",
-      status: "Healthy",
-      health_score: 96.1,
-      rpm: 652.0,
-      temperature: 33.1,
-      vibration: 125.0,
-      scenario: "normal",
-      oee_percentage: 98.0,
-      location: "Bay 1 - Weaving Shed North",
-      meters_woven_today: 162.0,
-      active_alerts_count: 0,
-    },
-    {
-      machine_id: "LOOM-03",
-      name: "Air-Jet Loom C",
-      model: "Picanol OmniPlus 220cm",
-      status: "Warning",
-      health_score: 68.2,
-      rpm: 641.0,
-      temperature: 46.5,
-      vibration: 495.0,
-      scenario: "bearing_wear",
-      oee_percentage: 89.5,
-      location: "Bay 2 - Weaving Shed North",
-      meters_woven_today: 132.8,
-      active_alerts_count: 1,
-    },
-    {
-      machine_id: "LOOM-04",
-      name: "Air-Jet Loom D",
-      model: "Picanol OmniPlus-i 190cm",
-      status: "Healthy",
-      health_score: 94.8,
-      rpm: 648.0,
-      temperature: 33.2,
-      vibration: 138.0,
+      rpm: 650.0,
+      temperature: 31.8,
+      vibration: 84.0,
       scenario: "normal",
       oee_percentage: 96.8,
-      location: "Bay 2 - Weaving Shed North",
-      meters_woven_today: 154.0,
+      location: "Bay 1 - High-Speed Weaving Shed",
+      meters_woven_today: 185.4,
       active_alerts_count: 0,
     },
     {
-      machine_id: "LOOM-05",
-      name: "Air-Jet Loom E",
-      model: "Picanol OmniPlus 280cm (Jacquard)",
+      machine_id: "toyota",
+      name: "TOYOTA JAT910",
+      model: "Toyota E-Shed Servo Air-Jet 210cm",
+      status: "Healthy",
+      health_score: 96.2,
+      rpm: 680.0,
+      temperature: 32.5,
+      vibration: 92.0,
+      scenario: "normal",
+      oee_percentage: 97.5,
+      location: "Bay 2 - Cleanroom Denim Hall",
+      meters_woven_today: 210.8,
+      active_alerts_count: 0,
+    },
+    {
+      machine_id: "tsudakoma",
+      name: "TSUDAKOMA ZAX001 NEO PLUS",
+      model: "Tsudakoma Box-Frame Heavy Sley 230cm",
       status: "Warning",
-      health_score: 71.5,
-      rpm: 635.0,
-      temperature: 48.2,
-      vibration: 265.0,
-      scenario: "motor_overload",
-      oee_percentage: 91.4,
-      location: "Bay 3 - Special Fabrics Shed",
-      meters_woven_today: 118.4,
+      health_score: 68.5,
+      rpm: 620.0,
+      temperature: 48.6,
+      vibration: 495.0,
+      scenario: "bearing_wear",
+      oee_percentage: 88.2,
+      location: "Bay 3 - Heavy Technical Filament Bay",
+      meters_woven_today: 144.6,
       active_alerts_count: 1,
     },
   ];
 
   const handleSelectMachine = (machine: MachineSummary) => {
     setActiveMachineId(machine.machine_id);
-    if (machine.machine_id === "LOOM-01") {
-      // Switch to main console view
-      setActiveTab("console");
+    if (machine.machine_id === "tsudakoma") {
+      setScenario("bearing_wear");
     } else {
-      // Sync scenario to inspect the chosen machine condition
-      setScenario(machine.scenario);
-      setActiveTab("console");
+      setScenario("normal");
     }
+    setActiveTab("console");
   };
 
   const getStatusBadge = (status: string) => {
@@ -150,7 +118,7 @@ export const FactoryFloorView: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-industrial-900 border border-industrial-700 text-slate-300">
-              Fleet Size: <strong className="text-cyan-400">5 Weaving Looms</strong>
+              Fleet Size: <strong className="text-cyan-400">3 Connected Air-Jet Looms</strong>
             </span>
           </div>
         </div>

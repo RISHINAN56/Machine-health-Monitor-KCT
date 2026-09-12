@@ -1,5 +1,6 @@
 import React from "react";
 import { useTwin } from "../../context/TwinContext";
+import { REAL_WORLD_MACHINES } from "../../data/machinesData";
 import { CircularGauge } from "../common/CircularGauge";
 import {
   Clock,
@@ -12,9 +13,10 @@ import {
 } from "lucide-react";
 
 export const MachineOverview: React.FC = () => {
-  const { telemetry, isConnected } = useTwin();
+  const { telemetry, isConnected, activeMachineId } = useTwin();
+  const activeMachine = REAL_WORLD_MACHINES[activeMachineId] || REAL_WORLD_MACHINES.picanol;
 
-  const healthScore = telemetry?.overall_health_score ?? 100;
+  const healthScore = telemetry?.overall_health_score ?? activeMachine.healthScore;
   const breakdown = telemetry?.health_breakdown;
 
   // Format uptime in hh:mm:ss
@@ -28,13 +30,13 @@ export const MachineOverview: React.FC = () => {
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-5 border border-industrial-700/60 shadow-panel flex flex-col justify-between">
+    <div className="glass-panel p-5 rounded-2xl border border-industrial-700/60 shadow-panel flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-industrial-700/40">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-sm tracking-wider text-cyan-300 uppercase font-bold">
-              Machine Overview
+            <h2 className="text-sm tracking-wider text-cyan-300 uppercase font-bold font-hud">
+              {activeMachine.name}
             </h2>
             <span
               className={`inline-block w-2 h-2 rounded-full ${isConnected ? "bg-cyber-emerald animate-pulse" : "bg-red-500"
@@ -42,7 +44,7 @@ export const MachineOverview: React.FC = () => {
             />
           </div>
           <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Unit: LOOM-AIRJET-042 | Industrial Weaving Loom
+            Unit ID: <strong className="text-white">{activeMachine.id.toUpperCase()}</strong> | {activeMachine.manufacturer} {activeMachine.type}
           </p>
         </div>
 

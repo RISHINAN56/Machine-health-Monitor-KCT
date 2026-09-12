@@ -1,6 +1,5 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Float, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useTwin } from "../../context/TwinContext";
 
@@ -9,171 +8,145 @@ interface HolographicRingsProps {
 }
 
 export const HolographicRings: React.FC<HolographicRingsProps> = ({ visible = true }) => {
-  const { displayTelemetry, selectedComponent } = useTwin();
-  const isInspectionMode = Boolean(selectedComponent);
+  const { displayTelemetry } = useTwin();
+
   const ring1Ref = useRef<THREE.Group>(null);
   const ring2Ref = useRef<THREE.Group>(null);
-  const ring3Ref = useRef<THREE.Group>(null);
+  const radarTicksRef = useRef<THREE.Group>(null);
 
   const telemetry = displayTelemetry;
-  const health = telemetry?.overall_health_score ?? 100;
   const status = telemetry?.overall_status ?? "Healthy";
-  const rpm = (telemetry?.sensors?.rpm ?? 0).toFixed(0);
-  const temp = (telemetry?.sensors?.temperature ?? 0).toFixed(1);
+  const rpm = telemetry?.sensors?.rpm ?? 650;
 
-  // Dynamic status color
-  const statusTheme =
-    status === "Healthy"
-      ? {
-          glow: "#00ff88",
-          text: "text-[#00ff88]",
-          border: "border-[#00ff88]/60",
-          bg: "bg-[#00ff88]/10",
-          risk: "LOW RISK",
-        }
-      : status === "Warning"
-      ? {
-          glow: "#fbbf24",
-          text: "text-[#fbbf24]",
-          border: "border-[#fbbf24]/60",
-          bg: "bg-[#fbbf24]/10",
-          risk: "MODERATE RISK",
-        }
-      : {
-          glow: "#ef4444",
-          text: "text-[#ef4444]",
-          border: "border-[#ef4444]/60",
-          bg: "bg-[#ef4444]/10",
-          risk: "HIGH RISK",
-        };
+  // Refined, elegant, low-intensity status palette
+  const statusTheme = useMemo(() => {
+    if (status === "Critical") {
+      return {
+        primary: "#ef4444",
+        emissiveIntensity: 0.9,
+      };
+    }
+    if (status === "Warning") {
+      return {
+        primary: "#f59e0b",
+        emissiveIntensity: 0.85,
+      };
+    }
+    return {
+      primary: "#00e5ff",
+      emissiveIntensity: 0.7,
+    };
+  }, [status]);
 
-  useFrame((_, delta) => {
+  // Subtle radial tick marks along the ground radar perimeter
+  const tickGeometries = useMemo(() => {
+    const ticks: [number, number, number][] = [];
+    const count = 32;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const r1 = 2.92;
+      const r2 = i % 4 === 0 ? 3.04 : 2.98;
+      ticks.push([Math.cos(angle) * r1, 0, Math.sin(angle) * r1]);
+      ticks.push([Math.cos(angle) * r2, 0, Math.sin(angle) * r2]);
+    }
+    return ticks;
+  }, []);
+
+  useFrame((state, delta) => {
+    const t = state.clock.getElapsedTime();
+    const speedMult = Math.max(0.5, Math.min(1.8, rpm / 650));
+
+    // 1. Slow, elegant rotation for ground radar tick ring
+    if (radarTicksRef.current) {
+      radarTicksRef.current.rotation.y = t * 0.04 * speedMult;
+    }
+
+    // 2. Primary Gyro Ring (Horizontal thin torus)
     if (ring1Ref.current) {
-      ring1Ref.current.rotation.y += delta * 0.18;
+      ring1Ref.current.rotation.y += delta * 0.2 * speedMult;
+      ring1Ref.current.position.y = 0.18 + Math.sin(t * 1.5) * 0.02;
     }
+
+    // 3. Inner Counter-Rotating Ring
     if (ring2Ref.current) {
-      ring2Ref.current.rotation.y -= delta * 0.12;
-      ring2Ref.current.rotation.x = Math.sin(Date.now() * 0.0008) * 0.08;
-    }
-    if (ring3Ref.current) {
-      ring3Ref.current.rotation.y += delta * 0.06;
+      ring2Ref.current.rotation.y -= delta * 0.16 * speedMult;
+      ring2Ref.current.rotation.x = Math.sin(t * 0.8) * 0.06;
     }
   });
 
   if (!visible) return null;
 
   return (
-    <group position={[0, 0.2, 0]}>
-      {/* Outer Ground Radar Grid Ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[2.8, 2.84, 64]} />
+    <group position={[0, 0.015, 0]} name="digital-twin-energy-platform">
+      {/* 1. Subtle Ground Projection Ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.9, 2.92, 80]} />
         <meshBasicMaterial
-          color={statusTheme.glow}
+          color={statusTheme.primary}
           transparent
-          opacity={0.35}
+          opacity={0.25}
           side={THREE.DoubleSide}
+          depthWrite={false}
         />
       </mesh>
 
-      {/* Primary Floating Holographic Gyro Rings */}
-      <Float speed={1.5} rotationIntensity={0.15} floatIntensity={0.3}>
-        {/* Ring 1: High-speed counter-clockwise ring with telemetry points */}
-        <group ref={ring1Ref}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[2.5, 0.012, 16, 80]} />
-            <meshStandardMaterial
-              color={statusTheme.glow}
-              emissive={statusTheme.glow}
-              emissiveIntensity={1.8}
-              transparent
-              opacity={0.7}
-              roughness={0.2}
-            />
-          </mesh>
+      {/* Rotating Radial Ticks */}
+      <group ref={radarTicksRef}>
+        {tickGeometries.map((pos, idx) => {
+          if (idx % 2 !== 0) return null;
+          const next = tickGeometries[idx + 1];
+          return (
+            <line key={`tick-${idx}`}>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  count={2}
+                  array={new Float32Array([...pos, ...next])}
+                  itemSize={3}
+                />
+              </bufferGeometry>
+              <lineBasicMaterial
+                color={statusTheme.primary}
+                transparent
+                opacity={0.28}
+                depthWrite={false}
+              />
+            </line>
+          );
+        })}
+      </group>
 
-          {/* Orbiting Badge: Health Score (Hidden in inspection mode, compact HUD styling) */}
-          {!isInspectionMode && (
-            <group position={[2.5, 0.3, 0]}>
-              <Html center distanceFactor={4.5} transform>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-sm border ${statusTheme.border} bg-slate-950/50 shadow-md text-[8px] font-mono select-none pointer-events-none whitespace-nowrap`}
-                >
-                  <span className="uppercase tracking-wider text-slate-400">HEALTH</span>
-                  <span className={`font-bold ${statusTheme.text}`}>
-                    {health.toFixed(0)}%
-                  </span>
-                </div>
-              </Html>
-            </group>
-          )}
+      {/* 2. Primary Elegant Holographic Ring (Thin, Non-Blinding) */}
+      <group ref={ring1Ref} position={[0, 0.18, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[2.7, 0.007, 16, 96]} />
+          <meshStandardMaterial
+            color={statusTheme.primary}
+            emissive={statusTheme.primary}
+            emissiveIntensity={statusTheme.emissiveIntensity}
+            transparent
+            opacity={0.65}
+            roughness={0.2}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
 
-          {/* Orbiting Badge: RPM */}
-          {!isInspectionMode && (
-            <group position={[-2.5, -0.2, 0]}>
-              <Html center distanceFactor={4.5} transform>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-sm border border-cyan-400/40 bg-slate-950/50 shadow-md text-[8px] font-mono select-none pointer-events-none whitespace-nowrap">
-                  <span className="uppercase tracking-wider text-cyan-300">RPM</span>
-                  <span className="font-bold text-cyan-200">{rpm}</span>
-                </div>
-              </Html>
-            </group>
-          )}
-        </group>
-
-        {/* Ring 2: Tilted counter-rotating ring with Temp & Risk level */}
-        <group ref={ring2Ref} rotation={[0.2, 0, 0]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[3.2, 0.008, 16, 96]} />
-            <meshStandardMaterial
-              color="#38bdf8"
-              emissive="#0284c7"
-              emissiveIntensity={1.4}
-              transparent
-              opacity={0.5}
-            />
-          </mesh>
-
-          {/* Orbiting Badge: Temperature */}
-          {!isInspectionMode && (
-            <group position={[0, 0.4, 3.2]}>
-              <Html center distanceFactor={4.5} transform>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-sm border border-amber-400/40 bg-slate-950/50 shadow-md text-[8px] font-mono select-none pointer-events-none whitespace-nowrap">
-                  <span className="uppercase tracking-wider text-amber-300">TEMP</span>
-                  <span className="font-bold text-amber-200">{temp}°C</span>
-                </div>
-              </Html>
-            </group>
-          )}
-
-          {/* Orbiting Badge: Risk Level */}
-          {!isInspectionMode && (
-            <group position={[0, -0.3, -3.2]}>
-              <Html center distanceFactor={4.5} transform>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-sm border ${statusTheme.border} bg-slate-950/50 shadow-md text-[8px] font-mono select-none pointer-events-none whitespace-nowrap`}
-                >
-                  <span className="uppercase tracking-wider text-slate-400">RISK</span>
-                  <span className={`font-bold ${statusTheme.text}`}>
-                    {statusTheme.risk}
-                  </span>
-                </div>
-              </Html>
-            </group>
-          )}
-        </group>
-
-        {/* Ring 3: Outer Horizon Orbit Ring */}
-        <group ref={ring3Ref}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[3.8, 0.006, 16, 120]} />
-            <meshBasicMaterial
-              color="#00f0ff"
-              transparent
-              opacity={0.25}
-            />
-          </mesh>
-        </group>
-      </Float>
+      {/* 3. Inner Precessing Energy Ring */}
+      <group ref={ring2Ref} position={[0, 0.26, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[2.1, 0.006, 16, 80]} />
+          <meshStandardMaterial
+            color={statusTheme.primary}
+            emissive={statusTheme.primary}
+            emissiveIntensity={statusTheme.emissiveIntensity * 0.75}
+            transparent
+            opacity={0.5}
+            roughness={0.2}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
     </group>
   );
 };

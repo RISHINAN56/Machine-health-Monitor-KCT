@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 from typing import Optional
 from app.models.energy import EnergyMetrics
@@ -14,14 +14,14 @@ class EnergyIntelligenceService:
 
     def __init__(self):
         self.tariff_rate_usd_per_kwh: float = 0.14  # Standard Industrial Tariff ($/kWh)
-        self.start_time: datetime = datetime.utcnow()
+        self.start_time: datetime = datetime.now(timezone.utc)
         self.cumulative_kwh_today: float = 142.8
         self.cumulative_kwh_week: float = 890.5
         self.cumulative_kwh_month: float = 3840.0
-        self.last_update_time: datetime = datetime.utcnow()
+        self.last_update_time: datetime = datetime.now(timezone.utc)
 
     def evaluate_energy(self, sensors: RawSensorData, machine_id: str = "LOOM-01") -> EnergyMetrics:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         dt_hours = max(0.0001, (now - self.last_update_time).total_seconds() / 3600.0)
         self.last_update_time = now
 

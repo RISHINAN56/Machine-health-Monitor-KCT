@@ -2,7 +2,7 @@ import asyncio
 import logging
 import math
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from app.config import settings
 from app.database import db_manager
@@ -42,7 +42,7 @@ class TelemetryStreamer:
         self.current_rpm: float = 650.0
 
         # Production metrics
-        self.start_time: datetime = datetime.utcnow()
+        self.start_time: datetime = datetime.now(timezone.utc)
         self.total_picks: int = 142850
         self.meters_woven: float = 78.4
         self.latest_packet: Optional[TelemetryPacket] = None
@@ -130,7 +130,8 @@ class TelemetryStreamer:
     async def start(self) -> None:
         if not self.is_running:
             self.is_running = True
-            self.start_time = datetime.utcnow()
+            self.meters_woven = 0.0
+            self.start_time = datetime.now(timezone.utc)
             self._task = asyncio.create_task(self._simulation_loop())
             logger.info("Telemetry streamer started at %.2fs interval", settings.STREAM_INTERVAL_SECONDS)
 
@@ -184,7 +185,7 @@ class TelemetryStreamer:
         rpm_noise = random.gauss(0, 3.5) if self.scenario != SimulationScenario.RAPID_ESTOP else 0.0
 
         # Special periodic harmonic spikes for loom beat-up vibration
-        beat_phase = (datetime.utcnow().timestamp() * 10.0) % (2.0 * math.pi)
+        beat_phase = (datetime.now(timezone.utc).timestamp() * 10.0) % (2.0 * math.pi)
         loom_beat_harmonic = math.sin(beat_phase) * (45.0 if self.current_rpm > 100 else 0.0)
 
         # Smooth transition
@@ -206,7 +207,7 @@ class TelemetryStreamer:
             self.meters_woven += picks_this_tick / 1800.0  # ~1800 picks per meter of standard woven fabric
 
         return RawSensorData(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             temperature=round(self.current_temp, 1),
             vibration=round(self.current_vib, 1),
             motor_load=round(self.current_load, 1),
@@ -238,7 +239,7 @@ class TelemetryStreamer:
         quality = 0.99 if overall_score > 70 else (0.92 if overall_score > 45 else 0.75)
         oee = round(availability * perf * quality * 100.0, 1)
 
-        uptime_secs = (datetime.utcnow() - self.start_time).total_seconds()
+        uptime_secs = (datetime.now(timezone.utc) - self.start_time).total_seconds()
 
         packet = TelemetryPacket(
             timestamp=sensors.timestamp,

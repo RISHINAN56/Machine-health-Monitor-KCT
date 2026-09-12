@@ -12,6 +12,10 @@ import {
   WorkOrder,
   WorkOrderStatus,
 } from "../types";
+import {
+  generateMachineTelemetryPacket,
+  REAL_WORLD_MACHINES,
+} from "../data/machinesData";
 
 interface TwinContextType {
   telemetry: TelemetryPacket | null;
@@ -37,6 +41,10 @@ interface TwinContextType {
   playbackHistory: TelemetryPacket[];
   isPlaying: boolean;
   playbackSpeed: number;
+  isExploded: boolean;
+  faultBeamEnabled: boolean;
+  setIsExploded: (val: boolean | ((prev: boolean) => boolean)) => void;
+  setFaultBeamEnabled: (val: boolean | ((prev: boolean) => boolean)) => void;
   setSelectedComponent: (comp: string | null) => void;
   setCameraPreset: (preset: CameraPreset) => void;
   setWireframeMode: (val: boolean | ((prev: boolean) => boolean)) => void;
@@ -60,21 +68,55 @@ interface TwinContextType {
 const TwinContext = createContext<TwinContextType | null>(null);
 
 export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [telemetry, setTelemetry] = useState<TelemetryPacket | null>(null);
-  const [history, setHistory] = useState<TelemetryPacket[]>([]);
+  const [activeMachineId, setActiveMachineId] = useState<string>("picanol");
+  const [activeScenario, setActiveScenario] = useState<SimulationScenario>("normal");
+  const [telemetry, setTelemetry] = useState<TelemetryPacket | null>(() =>
+    generateMachineTelemetryPacket("picanol", "normal")
+  );
+  const [history, setHistory] = useState<TelemetryPacket[]>(() => [
+    generateMachineTelemetryPacket("picanol", "normal"),
+  ]);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("isometric");
   const [wireframeMode, setWireframeMode] = useState(false);
   const [viewportMode, setViewportMode] = useState<ViewportMode>("standard");
   const [activeTab, setActiveTab] = useState<NavigationTab>("console");
-  const [activeMachineId, setActiveMachineId] = useState<string>("LOOM-01");
-  const [activeScenario, setActiveScenario] = useState<SimulationScenario>("normal");
+  const [isExploded, setIsExploded] = useState(false);
+  const [faultBeamEnabled, setFaultBeamEnabled] = useState(true);
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [energy, setEnergy] = useState<EnergyMetrics | null>(null);
   const [fleet, setFleet] = useState<FleetOverview | null>(null);
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
+
+  // 2-Second Simulated WebSocket Real-Time Telemetry Updates (RPM, Temp, Health, Energy, Production)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTelemetry((prev) => {
+        const nextPacket = generateMachineTelemetryPacket(activeMachineId, activeScenario);
+        if (prev) {
+          nextPacket.meters_woven = Number((prev.meters_woven + 0.05).toFixed(2));
+          nextPacket.total_picks = prev.total_picks + 18;
+          nextPacket.uptime_seconds = prev.uptime_seconds + 2;
+        }
+        return nextPacket;
+      });
+      setHistory((prev) => {
+        const nextPacket = generateMachineTelemetryPacket(activeMachineId, activeScenario);
+        return [...prev.slice(-240), nextPacket];
+      });
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [activeMachineId, activeScenario]);
+
+  const handleSetActiveMachineId = (id: string) => {
+    setActiveMachineId(id);
+    const packet = generateMachineTelemetryPacket(id, activeScenario);
+    setTelemetry(packet);
+    setHistory((prev) => [...prev.slice(-240), packet]);
+  };
 
   // AI Assistant state
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -448,12 +490,16 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         playbackHistory,
         isPlaying,
         playbackSpeed,
+        isExploded,
+        faultBeamEnabled,
+        setIsExploded,
+        setFaultBeamEnabled,
         setSelectedComponent,
         setCameraPreset,
         setWireframeMode: handleSetWireframe,
         setViewportMode: handleSetViewportMode,
         setActiveTab,
-        setActiveMachineId,
+        setActiveMachineId: handleSetActiveMachineId,
         setScenario,
         acknowledgeAlert,
         createWorkOrder,

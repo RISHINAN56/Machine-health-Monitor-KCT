@@ -1,5 +1,41 @@
 export type MachineStatus = "Healthy" | "Warning" | "Critical";
 
+export type RealMachineId = "picanol" | "toyota" | "tsudakoma";
+
+export interface RealWorldMachine {
+  id: RealMachineId;
+  name: string;
+  manufacturer: string;
+  type: string;
+  status: MachineStatus;
+  healthScore: number;
+  rpm: number;
+  temperature: number;
+  vibration: number;
+  efficiency: number;
+  installationDate: string;
+  operatingHours: number;
+  currentProduction: string;
+  picksPerMinute: number;
+  fabricType: string;
+  powerConsumptionKw: number;
+  airPressureBar: number;
+  maintenanceSchedule: string;
+  modelGlb: string;
+  accentColor: string;
+  badgeText: string;
+  location: string;
+  metersWovenToday: number;
+  activeAlertsCount: number;
+  details: {
+    reedWidth: string;
+    sheddingType: string;
+    nozzleSystem: string;
+    motorType: string;
+    controlSystem: string;
+  };
+}
+
 export type SimulationScenario =
   | "normal"
   | "bearing_wear"
@@ -121,7 +157,7 @@ export interface WorkOrder {
 
 export type CameraPreset = "isometric" | "motor" | "bearings" | "loom" | "belt" | "top";
 
-export type ViewportMode = "standard" | "thermal" | "wireframe";
+export type ViewportMode = "standard" | "holographic" | "thermal" | "wireframe" | "xr";
 
 export type NavigationTab = "console" | "fleet" | "energy" | "executive";
 

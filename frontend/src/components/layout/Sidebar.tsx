@@ -13,6 +13,8 @@ import {
   Compass,
 } from "lucide-react";
 
+import { REAL_WORLD_MACHINES } from "../../data/machinesData";
+
 export const Sidebar: React.FC = () => {
   const {
     activeScenario,
@@ -21,7 +23,10 @@ export const Sidebar: React.FC = () => {
     setSelectedComponent,
     setCameraPreset,
     telemetry,
+    activeMachineId,
   } = useTwin();
+
+  const machine = REAL_WORLD_MACHINES[activeMachineId] || REAL_WORLD_MACHINES.picanol;
 
   const scenarios: {
     id: SimulationScenario;
@@ -189,15 +194,19 @@ export const Sidebar: React.FC = () => {
         </div>
         <div className="flex justify-between">
           <span>Unit ID:</span>
-          <span className="text-cyan-300">LOOM-AIRJET-042</span>
+          <span className="text-cyan-300 font-bold uppercase">{machine.id}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Machine:</span>
+          <span className="text-slate-100 font-semibold">{machine.name}</span>
         </div>
         <div className="flex justify-between">
           <span>Machine Type:</span>
-          <span className="text-slate-200">High-Speed Air-Jet Loom</span>
+          <span className="text-slate-200">{machine.manufacturer} {machine.type}</span>
         </div>
         <div className="flex justify-between">
           <span>Rated Speed:</span>
-          <span className="text-cyan-300">650 RPM (PPM)</span>
+          <span className="text-cyan-300">{machine.rpm} RPM (PPM)</span>
         </div>
         <div className="flex justify-between">
           <span>Standard:</span>

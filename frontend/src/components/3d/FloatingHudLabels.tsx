@@ -21,14 +21,13 @@ interface ComponentLabelConfig {
 }
 
 // Perimeter Clearance Placement: Each label extends outwards into empty negative space
-// around the machine so annotations NEVER block Main Motor, Drive Shaft, Belt, or Loom.
 const LABELS: ComponentLabelConfig[] = [
   {
     id: "main_motor",
-    name: "Motor Unit",
+    name: "Sumo Motor Drive",
     shortName: "MOTOR",
-    anchor: [-1.3, 1.05, 0.55], // Physical motor top
-    labelPos: [-1.9, 1.45, 0.55], // Outward left clearance
+    anchor: [-1.3, 1.05, 0.55],
+    labelPos: [-2.1, 1.55, 0.55],
     getHealth: (t) => t?.components?.main_motor?.health_score ?? 94,
     getMetric: (t) =>
       `${(t?.sensors?.temperature ?? 42.0).toFixed(0)}°C • ${(t?.sensors?.motor_current ?? 12.4).toFixed(1)}A • RUL:${t?.components?.main_motor?.remaining_useful_life_days ?? 45}d`,
@@ -38,18 +37,18 @@ const LABELS: ComponentLabelConfig[] = [
     id: "belt_system",
     name: "Belt Transmission",
     shortName: "BELT",
-    anchor: [-0.65, 1.25, 0.55], // Physical pulley housing
-    labelPos: [-1.15, 1.9, -0.15], // Elevated rear-left clearance
+    anchor: [-0.65, 1.25, 0.55],
+    labelPos: [-1.2, 2.05, -0.2],
     getHealth: (t) => t?.components?.belt_system?.health_score ?? 91,
     getMetric: (t) => `SYNC • STRESS: ${t?.components?.belt_system?.stress_level ?? 25}%`,
     isFailing: (t) => t?.components?.belt_system?.is_failing ?? false,
   },
   {
     id: "bearings",
-    name: "Spindle Bearing",
-    shortName: "BEARINGS",
-    anchor: [0.0, 1.5, 0.55], // Center spindle bearing housing
-    labelPos: [0.0, 2.15, 0.55], // High-clearance overhead sky
+    name: "Spindle Roller Bearing",
+    shortName: "BEARING",
+    anchor: [0.0, 1.5, 0.55],
+    labelPos: [0.0, 2.3, 0.55],
     getHealth: (t) => t?.components?.bearings?.health_score ?? 89,
     getMetric: (t) =>
       `${(t?.sensors?.vibration ?? 2.1).toFixed(1)} mm/s • RUL:${t?.components?.bearings?.remaining_useful_life_days ?? 60}d`,
@@ -57,27 +56,26 @@ const LABELS: ComponentLabelConfig[] = [
   },
   {
     id: "drive_shaft",
-    name: "Drive Shaft",
+    name: "Main Drive Shaft",
     shortName: "SHAFT",
-    anchor: [-0.25, 1.4, 0.6], // Drive shaft axis
-    labelPos: [-0.4, 0.85, 1.15], // Lower-forward foreground clearance
+    anchor: [-0.25, 1.4, 0.6],
+    labelPos: [-0.4, 0.75, 1.25],
     getHealth: (t) => t?.components?.drive_shaft?.health_score ?? 96,
-    getMetric: (t) => `${(t?.sensors?.rpm ?? 850).toFixed(0)} RPM`,
+    getMetric: (t) => `${(t?.sensors?.rpm ?? 650).toFixed(0)} RPM`,
     isFailing: (t) => t?.components?.drive_shaft?.is_failing ?? false,
   },
   {
     id: "loom_section",
-    name: "Weaving Loom",
-    shortName: "LOOM",
-    anchor: [0.85, 1.1, 0.35], // Loom frame
-    labelPos: [1.8, 1.55, 0.55], // Outward right clearance
+    name: "Sley & E-Shed Loom",
+    shortName: "SLEY",
+    anchor: [0.85, 1.1, 0.35],
+    labelPos: [2.0, 1.65, 0.55],
     getHealth: (t) => t?.components?.loom_section?.health_score ?? 97,
-    getMetric: (t) => `${(t?.sensors?.loom_speed ?? 420).toFixed(0)} PPM • SHED 12mm`,
+    getMetric: (t) => `${(t?.sensors?.loom_speed ?? 650).toFixed(0)} PPM • SHED 12mm`,
     isFailing: (t) => t?.components?.loom_section?.is_failing ?? false,
   },
 ];
 
-// Individual Micro-HUD Item with Bounded Distance Scaling
 const HudCalloutItem: React.FC<{
   item: ComponentLabelConfig;
   health: number;
@@ -91,14 +89,10 @@ const HudCalloutItem: React.FC<{
   const cardRef = useRef<HTMLDivElement>(null);
   const labelPosVec = useMemo(() => new THREE.Vector3(...item.labelPos), [item.labelPos]);
 
-  // Inspection Mode: Hide all non-selected labels to keep the machine 100% visible
   if (isOtherSelected && !isSelected) {
     return null;
   }
 
-  // Camera Distance Scaling:
-  // Dynamically clamp scale between 0.72x (far) and 1.15x (close inspection)
-  // Strictly prevents giant labels while retaining natural perspective feel
   useFrame(({ camera }) => {
     if (cardRef.current) {
       const dist = camera.position.distanceTo(labelPosVec);
@@ -107,43 +101,35 @@ const HudCalloutItem: React.FC<{
     }
   });
 
-  // Dynamic status color theme based on health / fault status
   const theme = isFailing || health < 50
     ? {
         accent: "#ef4444",
         text: "text-red-400",
-        border: "border-red-500/60",
+        border: "border-red-500/80",
         badgeBg: "bg-red-500/20",
-        glow: "shadow-[0_0_8px_rgba(239,68,68,0.35)]",
+        glow: "shadow-[0_0_15px_rgba(239,68,68,0.4)]",
+        scanline: "from-red-500/0 via-red-500/25 to-red-500/0",
       }
     : health < 75
     ? {
-        accent: "#fbbf24",
+        accent: "#f59e0b",
         text: "text-amber-400",
-        border: "border-amber-500/60",
+        border: "border-amber-500/80",
         badgeBg: "bg-amber-500/20",
-        glow: "shadow-[0_0_8px_rgba(251,191,36,0.25)]",
-      }
-    : health < 90
-    ? {
-        accent: "#00e5ff",
-        text: "text-cyan-400",
-        border: "border-cyan-400/50",
-        badgeBg: "bg-cyan-500/20",
-        glow: "shadow-[0_0_8px_rgba(0,229,255,0.25)]",
+        glow: "shadow-[0_0_15px_rgba(245,158,11,0.35)]",
+        scanline: "from-amber-500/0 via-amber-500/25 to-amber-500/0",
       }
     : {
-        accent: "#00ff88",
-        text: "text-emerald-400",
-        border: "border-emerald-400/50",
-        badgeBg: "bg-emerald-500/20",
-        glow: "shadow-[0_0_8px_rgba(0,255,136,0.2)]",
+        accent: "#00e5ff",
+        text: "text-cyan-300",
+        border: "border-cyan-400/70",
+        badgeBg: "bg-cyan-500/20",
+        glow: "shadow-[0_0_15px_rgba(0,229,255,0.3)]",
+        scanline: "from-cyan-400/0 via-cyan-400/25 to-cyan-400/0",
       };
 
-  // 3D Angled Leader Line from component anchor to perimeter HUD label
   const linePoints = useMemo(() => {
     const p1 = new THREE.Vector3(...item.anchor);
-    // Slight mid-break elbow point for authentic CAD schematic look
     const midY = (item.anchor[1] + item.labelPos[1]) / 2;
     const pMid = new THREE.Vector3(
       item.anchor[0] * 0.4 + item.labelPos[0] * 0.6,
@@ -159,13 +145,12 @@ const HudCalloutItem: React.FC<{
       {/* 1. Component Surface Anchor Pin */}
       <group position={item.anchor}>
         <mesh>
-          <sphereGeometry args={[0.016, 16, 16]} />
-          <meshBasicMaterial color={theme.accent} />
+          <sphereGeometry args={[0.02, 16, 16]} />
+          <meshBasicMaterial color={theme.accent} toneMapped={false} />
         </mesh>
-        {/* Subtle animated anchor ring */}
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.024, 0.032, 20]} />
-          <meshBasicMaterial color={theme.accent} transparent opacity={isSelected ? 0.9 : 0.4} />
+          <ringGeometry args={[0.028, 0.038, 20]} />
+          <meshBasicMaterial color={theme.accent} transparent opacity={isSelected ? 0.95 : 0.5} toneMapped={false} />
         </mesh>
       </group>
 
@@ -181,11 +166,11 @@ const HudCalloutItem: React.FC<{
           attach="material"
           color={theme.accent}
           transparent
-          opacity={isSelected ? 0.85 : isHovered ? 0.7 : 0.4}
+          opacity={isSelected ? 0.9 : isHovered ? 0.75 : 0.45}
         />
       </line>
 
-      {/* 3. Micro-HUD Label Positioned in Clear Perimeter Space */}
+      {/* 3. Iron Man / Omniverse Holographic AR Label */}
       <group position={item.labelPos}>
         <Html center zIndexRange={[100, 0]}>
           <div
@@ -203,57 +188,62 @@ const HudCalloutItem: React.FC<{
             className="cursor-pointer select-none transition-transform duration-200"
           >
             {isSelected ? (
-              /* Inspection Mode: Detailed HUD Callout (55% smaller than original) */
+              /* Selected Inspection State */
               <div
-                className={`flex flex-col gap-0.5 px-2.5 py-1 rounded-md backdrop-blur-lg bg-slate-950/75 border border-cyan-300/80 shadow-[0_0_14px_rgba(0,240,255,0.35)] transition-all`}
+                className={`relative flex flex-col gap-1 px-3 py-1.5 rounded-lg backdrop-blur-xl bg-slate-950/85 border ${theme.border} ${theme.glow} overflow-hidden font-mono`}
               >
-                <div className="flex items-center justify-between gap-2.5">
+                {/* Animated Scanline Sweep */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-b ${theme.scanline} pointer-events-none animate-pulse`}
+                />
+
+                <div className="flex items-center justify-between gap-3 relative z-10">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white">
+                    <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: theme.accent }} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-white">
                       {item.name}
                     </span>
                   </div>
                   <span
-                    className={`px-1 py-0.2 rounded font-mono font-extrabold text-[8.5px] ${theme.badgeBg} ${theme.text}`}
+                    className={`px-1.5 py-0.2 rounded font-extrabold text-[9px] ${theme.badgeBg} ${theme.text}`}
                   >
                     {health.toFixed(0)}%
                   </span>
                 </div>
-                <div className="text-[8px] font-mono text-slate-300 whitespace-nowrap">
+                <div className="text-[8.5px] text-slate-300 whitespace-nowrap relative z-10 font-medium">
                   {metric}
                 </div>
               </div>
             ) : isHovered ? (
-              /* Hover Expanded Micro-Pill */
+              /* Hover Expanded State */
               <div
-                className={`flex flex-col gap-0.5 px-2 py-0.5 rounded-md backdrop-blur-md bg-slate-950/70 border ${theme.border} ${theme.glow} transition-all`}
+                className={`relative flex flex-col gap-0.5 px-2.5 py-1 rounded-md backdrop-blur-md bg-slate-950/80 border ${theme.border} ${theme.glow} overflow-hidden font-mono`}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2.5">
                   <div className="flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.accent }} />
-                    <span className="text-[8.5px] font-mono font-semibold uppercase tracking-wider text-slate-200">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-200">
                       {item.name}
                     </span>
                   </div>
-                  <span className={`text-[8px] font-mono font-bold ${theme.text}`}>
+                  <span className={`text-[8.5px] font-extrabold ${theme.text}`}>
                     {health.toFixed(0)}%
                   </span>
                 </div>
-                <div className="text-[7.5px] font-mono text-slate-400 whitespace-nowrap">
+                <div className="text-[8px] text-slate-400 whitespace-nowrap">
                   {metric}
                 </div>
               </div>
             ) : (
-              /* Default Mode: Ultra-Compact Single-Row Micro-HUD Pill (70% smaller than original) */
+              /* Default Compact State with Sci-Fi Angled Corners & Glow */
               <div
-                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-md backdrop-blur-sm bg-slate-950/55 border ${theme.border} ${theme.glow} hover:bg-slate-900/80 transition-colors`}
+                className={`relative flex items-center gap-1.5 px-2 py-0.5 rounded backdrop-blur-sm bg-slate-950/65 border ${theme.border} ${theme.glow} hover:bg-slate-900/90 transition-colors font-mono`}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.accent }} />
-                <span className="text-[8px] font-mono font-semibold uppercase tracking-wider text-slate-300">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.accent }} />
+                <span className="text-[8.5px] font-bold uppercase tracking-wider text-slate-200">
                   {item.shortName}
                 </span>
-                <span className={`text-[8px] font-mono font-bold ${theme.text}`}>
+                <span className={`text-[8.5px] font-extrabold ${theme.text}`}>
                   {health.toFixed(0)}%
                 </span>
               </div>
@@ -288,7 +278,7 @@ export const FloatingHudLabels: React.FC<FloatingHudLabelsProps> = ({ visible = 
   };
 
   return (
-    <group>
+    <group name="iron-man-holographic-hud-labels">
       {LABELS.map((item) => {
         const health = item.getHealth(displayTelemetry);
         const metric = item.getMetric(displayTelemetry);
@@ -311,4 +301,3 @@ export const FloatingHudLabels: React.FC<FloatingHudLabelsProps> = ({ visible = 
     </group>
   );
 };
-
