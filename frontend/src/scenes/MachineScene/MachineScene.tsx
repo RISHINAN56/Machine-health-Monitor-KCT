@@ -89,9 +89,9 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   };
 
@@ -110,8 +110,8 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
     telemetry?.overall_status === "Healthy"
       ? "text-[#00ff88] border-[#00ff88]/50"
       : telemetry?.overall_status === "Warning"
-      ? "text-[#fbbf24] border-[#fbbf24]/50"
-      : "text-[#ef4444] border-[#ef4444]/50";
+        ? "text-[#fbbf24] border-[#fbbf24]/50"
+        : "text-[#ef4444] border-[#ef4444]/50";
 
   const rpmText = (telemetry?.sensors?.rpm ?? 0).toFixed(0);
   const vibText = (telemetry?.sensors?.vibration ?? 0).toFixed(0);
@@ -183,11 +183,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
           <div className="flex items-center bg-industrial-900/90 border border-industrial-700/80 rounded-xl p-0.5 backdrop-blur-md">
             <button
               onClick={() => handleModeChange("standard")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
-                viewportMode === "standard"
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "standard"
                   ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 shadow-glow-cyan"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               title="Standard Realistic PBR View"
             >
               <Box className="w-3.5 h-3.5" />
@@ -196,11 +195,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => handleModeChange("holographic")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
-                viewportMode === "holographic"
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "holographic"
                   ? "bg-cyan-500/30 text-cyan-200 border border-cyan-300 shadow-[0_0_12px_rgba(0,229,255,0.5)]"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               title="Holographic Cyber Mode"
             >
               <Disc className="w-3.5 h-3.5 text-[#00e5ff]" />
@@ -209,11 +207,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => handleModeChange("thermal")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
-                viewportMode === "thermal"
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "thermal"
                   ? "bg-amber-500/25 text-amber-300 border border-amber-400/40 shadow-glow-amber"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               title="Thermal Heat Map Mode"
             >
               <Flame className="w-3.5 h-3.5" />
@@ -222,11 +219,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => handleModeChange("wireframe")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
-                viewportMode === "wireframe"
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "wireframe"
                   ? "bg-purple-500/25 text-purple-300 border border-purple-400/40"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               title="Wireframe CAD Structural Mode"
             >
               <Layers className="w-3.5 h-3.5" />
@@ -235,11 +231,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => handleModeChange("xr")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${
-                viewportMode === "xr"
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1 transition ${viewportMode === "xr"
                   ? "bg-emerald-500/25 text-emerald-300 border border-emerald-400/50 shadow-glow-emerald"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               title="XR Engineering Breakdown Mode"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -254,11 +249,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
                 soundEffects.playModeSwitch();
                 setIsExploded(!isExploded);
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition ${
-                isExploded
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition ${isExploded
                   ? "bg-amber-500/30 text-amber-300 border border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)] font-bold animate-pulse"
                   : "text-slate-400 hover:text-amber-300"
-              }`}
+                }`}
               title="Toggle Smooth Exploded View Animation"
             >
               <Layers className="w-3.5 h-3.5" />
@@ -270,11 +264,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
                 soundEffects.playHoverTick();
                 setFaultBeamEnabled(!faultBeamEnabled);
               }}
-              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
-                faultBeamEnabled
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${faultBeamEnabled
                   ? "text-red-300 bg-red-950/40 border border-red-500/40"
                   : "text-slate-500 hover:text-slate-300"
-              }`}
+                }`}
               title="Toggle 3D Fault Pointer Laser Beam"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -286,9 +279,8 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
           <div className="hidden md:flex items-center bg-industrial-900/90 border border-industrial-700/80 rounded-xl p-0.5 backdrop-blur-md">
             <button
               onClick={() => setShowHoloRings(!showHoloRings)}
-              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
-                showHoloRings ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
-              }`}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${showHoloRings ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+                }`}
               title="Toggle Holographic Rings"
             >
               <Disc className="w-3.5 h-3.5" />
@@ -297,9 +289,8 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => setShowHudLabels(!showHudLabels)}
-              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
-                showHudLabels ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
-              }`}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${showHudLabels ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+                }`}
               title="Toggle Floating HUD Labels"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -308,9 +299,8 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
 
             <button
               onClick={() => setAutoOrbit(!autoOrbit)}
-              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${
-                autoOrbit ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
-              }`}
+              className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-1 transition ${autoOrbit ? "text-cyan-300 bg-cyan-950/40 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
+                }`}
               title="Toggle Cinematic Auto-Orbit"
             >
               <Radio className="w-3.5 h-3.5" />
@@ -382,6 +372,7 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
           <OrbitControls
             ref={controlsRef}
             enableDamping
+            autoRotateSpeed={CAMERA_CONFIG.autoRotateSpeed}
             dampingFactor={CAMERA_CONFIG.dampingFactor}
             minDistance={CAMERA_CONFIG.minDistance}
             maxDistance={CAMERA_CONFIG.maxDistance}
@@ -426,11 +417,10 @@ export const MachineScene: React.FC<MachineSceneProps> = ({ onReplayIntro }) => 
                 setCameraPreset(item.id);
                 setSelectedComponent(item.componentId || null);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition tracking-wider ${
-                cameraPreset === item.id
+              className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition tracking-wider ${cameraPreset === item.id
                   ? "bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 shadow-glow-cyan"
                   : "text-slate-400 hover:text-slate-200 hover:bg-industrial-800/60"
-              }`}
+                }`}
             >
               {item.label}
             </button>

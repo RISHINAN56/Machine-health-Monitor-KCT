@@ -73,14 +73,14 @@ export const MachineOverview: React.FC = () => {
         {/* Multi-Factor Health Breakdown */}
         <div className="md:col-span-7 space-y-3">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Physical Degradation Factors
+            Machine Health Factors
           </div>
 
           {/* 1. Vibration Analysis */}
           <div>
             <div className="flex justify-between text-xs mb-1">
               <span className="text-slate-300 flex items-center gap-1.5 font-normal">
-                <Activity className="w-3.5 h-3.5 text-cyber-cyan" /> Vibration Analysis (ISO 10816)
+                <Activity className="w-3.5 h-3.5 text-cyber-cyan" /> Vibration Safety (ISO 10816)
               </span>
               <span className="font-bold text-slate-200">
                 {(breakdown?.vibration_score ?? 100).toFixed(0)}%

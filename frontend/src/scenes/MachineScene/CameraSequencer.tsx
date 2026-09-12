@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { CameraPreset } from "../../types";
-import { TARGET_POSITIONS, LOOK_AT_TARGETS } from "../../config/camera";
+import { TARGET_POSITIONS, LOOK_AT_TARGETS, CAMERA_CONFIG } from "../../config/camera";
 import { soundEffects } from "../../utils/soundEffects";
 
 export interface CameraSequencerProps {
@@ -58,7 +58,7 @@ export const CameraSequencer: React.FC<CameraSequencerProps> = ({
   useFrame(({ camera }, delta) => {
     if (controlsRef.current) {
       controlsRef.current.autoRotate = autoOrbit && sequencePhase.current === 0;
-      controlsRef.current.autoRotateSpeed = 0.85;
+      controlsRef.current.autoRotateSpeed = CAMERA_CONFIG.autoRotateSpeed;
     }
 
     if (sequencePhase.current === 0 || !controlsRef.current) return;

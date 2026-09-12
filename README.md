@@ -1,4 +1,4 @@
-# AegisTwin 4.0 | Industrial Textile Digital Twin Platform
+# MHM | 3D Machine Health Monitoring & Predictive Maintenance
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB.svg?logo=react)](https://reactjs.org/)
@@ -6,7 +6,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248.svg?logo=mongodb)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-grade **Industry 4.0 3D Digital Twin & Predictive Maintenance Platform** for advanced textile machinery (Rapier and Air-Jet Looms). Inspired by **Siemens MindSphere**, **Bosch IoT Suite**, **Tesla Vehicle Dashboard**, and **NVIDIA Omniverse**.
+A real-time monitoring platform for industrial textile machinery that combines an **interactive 3D model of the machine** with **AI-based maintenance prediction** to spot mechanical issues before breakdowns happen.
 
 ---
 
@@ -14,77 +14,79 @@ An enterprise-grade **Industry 4.0 3D Digital Twin & Predictive Maintenance Plat
 
 ```
                                  PHYSICAL TEXTILE LOOM
-              [PT100 Thermal Sensor] [Triaxial Accelerometer] [Hall Effect RPM] [CT Load]
+              [Temperature Sensor] [Vibration Sensor] [RPM Sensor] [Current Sensor]
                                           │
                                           ▼
-                      FASTAPI TELEMETRY & DATA ACQUISITION ENGINE
-                       (10 Hz Bi-directional WebSocket & REST APIs)
-                                    │             │
-                    ┌───────────────┘             └──────────────┐
-                    ▼                                            ▼
-          AI HEALTH & EXPLAINABILITY                      MONGODB DATABASE
-     • ISO 10816 Health Engine (0-100)              • Time-Series Telemetry History
-     • Calibrated ML Classifier                     • Active & Historical Alerts
-     • Natural Language Root-Cause "Why"            • Predictive Work Orders
-     • Remaining Useful Life (RUL) Hours            • Resilient In-Memory Fallback
-                    │                                            │
-                    └─────────────────────┬──────────────────────┘
-                                          │ Real-Time Streaming
-                                          ▼
-                           REACT 18 + THREE.JS MISSION CONTROL
-         • Procedural 3D Kinematic Model (Motor, Shaft, Bearings, Belt, Loom, Frame)
-         • Live Shader Glow (Green / Yellow / Red) & Dynamic Structural Vibration Shake
-         • Real-Time CRT Oscilloscope & Multi-Metric Historical Trend Graphs
-         • One-Click Fault Scenario Injector (Bearing Wear, Thermal Overload, Loom Jam)
+                             FASTAPI DATA SERVER
+                  (10 updates/sec via WebSockets & REST APIs)
+                                   │             │
+                   ┌───────────────┘             └──────────────┐
+                   ▼                                            ▼
+       AI HEALTH & PREDICTIONS                          MONGODB DATABASE
+    • Overall Health Score (0-100)                • Time-series sensor history
+    • Machine learning classification             • Active & past alerts
+    • Plain-English problem explanations          • Maintenance work orders
+    • Estimated time before part replacement      • In-memory backup fallback
+                   │                                            │
+                   └─────────────────────┬──────────────────────┘
+                                         │ Live Data Stream
+                                         ▼
+                         REACT & THREE.JS 3D DASHBOARD
+        • Interactive 3D machine model (Motor, Shaft, Bearings, Belt, Loom)
+        • Color-coded status glow (Green / Yellow / Red) & vibration shake effects
+        • Live sensor charts and historical metric trends
+        • One-click test scenarios (Bearing Wear, Motor Overheating, Machine Jam)
 ```
 
 ---
 
-## 🚀 Key Capabilities
+## 🚀 Key Features
 
-### 1. Spatial 3D Digital Twin (Three.js / React Three Fiber / Drei)
-- **Sub-Assembly Isolation & Inspection**: Click or isolate any mechanical sub-component:
-  - **Main Motor**: Finned stator, terminal box, rotating cooling fan.
-  - **Drive Shaft**: Longitudinal stainless steel shaft rotating synchronously to RPM.
-  - **Bearings**: Pillow block bearing housings with real-time ISO 10816 vibration stress glow.
-  - **Belt System**: Driven timing belts with rotational animation.
-  - **Loom Section**: Reciprocating heald frames, oscillating sley beam, and steel reed.
-  - **Power Unit**: Industrial inverter cabinet with active pilot LEDs.
-- **Dynamic Physics & Vibration Shake**: Real-time high-frequency structural vibration displacement shaking when vibration exceeds ISO thresholds.
-- **Live State Glow**: Real-time material emissive transitions:
-  - 🟢 **Healthy**: Emerald Green glow (`#10b981`)
-  - 🟡 **Warning**: Amber Yellow glow (`#f59e0b`)
-  - 🔴 **Critical**: Crimson Red strobing glow (`#ef4444`)
-- **Camera Presets**: Smooth animated transitions between Isometric, Motor Closeup, Bearing Housing, Loom Section, Belt Drive, and Top-Down viewports.
+### 1. Interactive 3D Model of the Machine (Three.js / React Three Fiber)
+- **Inspect Individual Machine Parts**: Click to zoom into and isolate any component:
+  - **Main Motor**: Stator body, connection box, and rotating cooling fan.
+  - **Drive Shaft**: Main stainless steel shaft rotating at the exact machine RPM.
+  - **Bearings**: Bearing housings with real-time vibration stress indicators.
+  - **Belt System**: Pulleys and timing belts with synchronized rotational movement.
+  - **Loom Section**: Moving frame, reed, and mechanical weaving assembly.
+  - **Power Unit**: Industrial control cabinet with active status indicators.
+- **Realistic Vibration Effects**: The 3D model physically shakes when sensor vibration exceeds safe limits.
+- **Color-Coded Status Glow**: Components change color based on health:
+  - 🟢 **Healthy**: Calm green glow (`#10b981`)
+  - 🟡 **Warning**: Amber yellow glow (`#f59e0b`)
+  - 🔴 **Critical**: Flashing crimson red glow (`#ef4444`)
+- **Camera Views**: Smooth transitions between isometric overview, motor close-up, bearings, loom section, belt drive, and top-down view.
 
-### 2. Multi-Factor ISO 10816 Machine Health Score (0–100)
-- **Vibration Impact (35%)**: Conforms to ISO 10816-3 Class II medium machine vibration severity zones (Zone A/B/C/D).
-- **Thermal Wear Impact (25%)**: Exponential Arrhenius degradation model based on stator winding heat.
-- **Motor Load Torque Reserve (25%)**: Mechanical resistance and shedding friction analysis.
-- **RPM Speed Stability (15%)**: Synchronous deviation and belt slippage detection.
+### 2. Machine Health Score (0–100)
+The overall score combines four physical operating factors:
+- **Vibration Safety (35%)**: Evaluates mechanical vibration against standard industrial safety limits (ISO 10816).
+- **Temperature Monitoring (25%)**: Tracks motor heat to detect cooling failures and overheating early.
+- **Motor Load (25%)**: Measures electrical current draw and mechanical resistance.
+- **Speed (RPM) Stability (15%)**: Detects belt slippage, motor stalls, and sudden speed drops.
 
-### 3. Explainable AI & Prescriptive Maintenance
-- **Predictive ML Classification**: Probabilistic random forest ensemble providing class probabilities (`Healthy`, `Warning`, `Critical`) and failure probability %.
-- **Root-Cause Explainability ("WHY")**: Natural language diagnostic explanation identifying the exact physical failure mode (e.g. *"Bearing inner raceway deterioration detected. Vibration level is 880.4 mm/s (+17% above ISO Zone D limit)..."*).
-- **Automated Work Orders**: One-click dispatching to technicians with execution window countdowns.
+### 3. AI-Based Maintenance Prediction
+- **Detection of Unusual Machine Behavior**: A machine learning model (Random Forest) evaluates sensor data to classify machine state as Healthy, Warning, or Critical.
+- **System That Identifies the Exact Faulty Component**: Instead of vague error codes, the system pinpoints the exact part under stress and explains the issue in plain English (e.g., *"Bearing wear detected: vibration level is 17% above the safe limit"*).
+- **Estimated Time Before Component Needs Replacement**: Calculates remaining operating hours for stressed parts so teams can schedule maintenance during planned shift breaks.
+- **Maintenance Tasks**: Create and track repair work orders with a single click.
 
-### 4. Interactive Simulation Scenarios
-- **Optimal Production**: Nominal speed (~650 RPM), cool motor (~31°C), low vibration (<150 mm/s).
-- **Bearing Raceway Fatigue**: High-frequency vibration spikes (>850 mm/s), bearing casing friction.
-- **Thermal Overload**: Stator overheating (>64°C), cooling blockage.
-- **Weft Insertion Jam**: Mechanical shed binding, motor load surging to 1050 A, RPM dropping sharply.
-- **Emergency Stop (E-Stop)**: Deceleration to 0 RPM within 1.5 seconds.
-- **Belt Slip Fluctuation**: Erratic speed oscillations (450–820 RPM).
+### 4. Built-in Test Scenarios
+- **Normal Operation**: Standard speed (~650 RPM), normal temperature (~31°C), low vibration (<150 mm/s).
+- **Bearing Wear**: High-frequency vibration spikes (>850 mm/s) caused by bearing friction.
+- **Motor Overheating**: High motor temperature (>64°C) caused by cooling blockages or heavy loads.
+- **Machine Jam**: Mechanical blockage causing motor current to surge and speed to drop abruptly.
+- **Emergency Stop**: Rapid deceleration to 0 RPM within 1.5 seconds.
+- **Belt Slippage**: Fluctuating speed and uneven RPM (450–820 RPM).
 
 ---
 
 ## 💻 Tech Stack
 
-- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, Framer Motion, Three.js, React Three Fiber (`@react-three/fiber`), Drei (`@react-three/drei`), Lucide React.
-- **Backend**: FastAPI, Uvicorn, WebSockets, Pydantic v2, Motor (Async MongoDB), PyMongo.
-- **Machine Learning**: Scikit-Learn (Random Forest & Decision Tree), NumPy, Pandas, Joblib.
-- **Database**: MongoDB 7.0 (with transparent zero-downtime in-memory ring-buffer fallback).
-- **Orchestration**: Docker & Docker Compose.
+- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, Three.js, React Three Fiber, Lucide Icons.
+- **Backend**: FastAPI, Uvicorn, WebSockets, Pydantic v2, Motor (Async MongoDB).
+- **Machine Learning**: Scikit-Learn (Random Forest & Decision Tree), NumPy, Pandas.
+- **Database**: MongoDB 7.0 (with automatic in-memory fallback if MongoDB is not running).
+- **Containers**: Docker & Docker Compose.
 
 ---
 
@@ -93,7 +95,7 @@ An enterprise-grade **Industry 4.0 3D Digital Twin & Predictive Maintenance Plat
 ### Prerequisites
 - Node.js (v18+)
 - Python (3.11+)
-- MongoDB (optional; backend includes resilient in-memory fallback)
+- MongoDB (optional; the backend automatically uses an in-memory database if MongoDB is not installed)
 
 ---
 
@@ -110,8 +112,8 @@ cd backend
 python3 -m app.main
 ```
 Backend will be live at:
-- **REST API & Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **WebSocket Feed**: `ws://localhost:8000/ws/telemetry`
+- **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Live Data Stream**: `ws://localhost:8000/ws/telemetry`
 
 #### Step 2: Start Frontend
 ```bash
@@ -120,7 +122,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Open **[http://localhost:5173](http://localhost:5173)** in your browser to launch the platform!
+Open **[http://localhost:5173](http://localhost:5173)** in your browser to launch the dashboard.
 
 ---
 
@@ -139,17 +141,17 @@ docker-compose up --build
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `WS` | `/ws/telemetry` | High-speed 10 Hz bi-directional WebSocket telemetry stream |
-| `GET` | `/api/telemetry/latest` | Latest raw & computed machine health packet |
-| `GET` | `/api/telemetry/history` | Sliding-window historical telemetry for charts |
-| `GET` | `/api/telemetry/summary` | Machine KPIs, OEE, uptime, and AI status |
-| `POST` | `/api/simulation/scenario` | Switch live simulation scenario (normal, bearing_wear, etc.) |
-| `GET` | `/api/alerts` | List active and historical alarm notifications |
-| `POST` | `/api/alerts/{id}/acknowledge` | Acknowledge active alarm event |
-| `GET` | `/api/maintenance/work-orders` | Retrieve list of maintenance work orders |
-| `POST` | `/api/maintenance/work-orders` | Dispatch a new maintenance work order |
+| `WS` | `/ws/telemetry` | Live 10 updates/sec bi-directional WebSocket data stream |
+| `GET` | `/api/telemetry/latest` | Latest raw sensor data and calculated health score |
+| `GET` | `/api/telemetry/history` | Historical sensor readings for trend charts |
+| `GET` | `/api/telemetry/summary` | Machine KPIs, efficiency (OEE), uptime, and AI status |
+| `POST` | `/api/simulation/scenario` | Switch test scenario (normal, bearing_wear, etc.) |
+| `GET` | `/api/alerts` | List active and historical warning notifications |
+| `POST` | `/api/alerts/{id}/acknowledge` | Mark an active alert as acknowledged |
+| `GET` | `/api/maintenance/work-orders` | Retrieve list of maintenance tasks |
+| `POST` | `/api/maintenance/work-orders` | Create a new maintenance task |
 
 ---
 
 ## 📄 License
-MIT License. Developed for Industry 4.0 Advanced Manufacturing.
+MIT License.

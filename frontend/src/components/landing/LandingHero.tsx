@@ -66,7 +66,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-slate-300 text-sm sm:text-base max-w-2xl mt-4 font-normal leading-relaxed"
         >
-          Advanced real-time digital twin platform for industrial machinery. Engineered for engineering students, faculty, and industry professionals—featuring physics-based 3D kinematics, ISO 10816 vibration analysis, AI failure prediction, and predictive maintenance.
+          Live machine monitoring with an interactive 3D model. Built for students, engineers, and plant operators to track machine health, detect unusual behavior early, and plan maintenance before breakdowns happen.
         </motion.p>
 
         {/* CTA Launch Button & Quick Telemetry Indicators */}
@@ -80,7 +80,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
             onClick={onEnterConsole}
             className="px-8 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-industrial-950 font-medium text-sm tracking-wider uppercase transition-all transform hover:scale-105 shadow-glow-cyan flex items-center gap-2.5"
           >
-            <span>Launch 3D Machine Visualization</span>
+            <span>Open 3D Machine Dashboard</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
@@ -115,9 +115,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
           </div>
 
           <div className="glass-panel p-3 rounded-xl border border-industrial-700/60 text-left">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase block">TELEMETRY STREAM</span>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase block">LIVE DATA STREAM</span>
             <span className="text-base font-bold text-emerald-400 mt-0.5 block">
-              10 Hz Live
+              10 updates/sec
             </span>
           </div>
         </motion.div>
@@ -138,10 +138,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
             <Boxes className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-semibold text-slate-100 mb-2">
-            Real-Time Sensor Data
+            Live Machine Data
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed font-sans">
-            Continuous 10 Hz acquisition across triaxial vibration analysis, thermal stator thermocouples, RPM monitoring, and motor armature current.
+            Tracks vibration, temperature, speed (RPM), and motor current 10 times every second to monitor machine conditions in real time.
           </p>
         </div>
 
@@ -151,10 +151,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
             <Cpu className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-semibold text-slate-100 mb-2">
-            Component Health Analysis
+            Detailed Component Health
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed font-sans">
-            Multi-factor Remaining Useful Life (RUL) estimation, Weibull hazard failure probability modeling, and sub-assembly degradation tracking.
+            Inspects individual parts like bearings and motors, tracks wear and tear, and estimates remaining operating time before replacement.
           </p>
         </div>
 
@@ -164,10 +164,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onEnterConsole }) => {
             <Wrench className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-semibold text-slate-100 mb-2">
-            Predictive Maintenance
+            AI Maintenance Prediction
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed font-sans">
-            AI failure prediction coupled with ISO 10816 standards, explainable root-cause diagnostics, and automated prescriptive maintenance work orders.
+            Uses machine learning to detect unusual machine behavior, pinpoint the exact faulty part, and create maintenance tasks before failure occurs.
           </p>
         </div>
       </section>

@@ -85,14 +85,14 @@ export const ComponentHealthGrid: React.FC = () => {
         <div>
           <h2 className="text-sm tracking-wider text-cyan-300 uppercase font-bold flex items-center gap-2">
             <Cpu className="w-4 h-4 text-cyan-400" />
-            Component Health Analysis
+            Detailed Component Health Analysis
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Physical Sub-Assembly Health &bull; Degradation Index &bull; RUL Countdown
+            Component Health &bull; Wear Level &bull; Time Until Replacement
           </p>
         </div>
         <span className="text-[11px] px-2 py-1 rounded bg-industrial-800 border border-industrial-700 text-slate-300">
-          6 Monitored Sub-Systems
+          6 Monitored Components
         </span>
       </div>
 
@@ -165,7 +165,7 @@ export const ComponentHealthGrid: React.FC = () => {
                 <div className="bg-industrial-950/60 p-2 rounded-lg border border-industrial-800">
                   <div className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
                     <Clock className="w-3 h-3 text-cyan-400" />
-                    <span>Est. RUL</span>
+                    <span>Est. Life Remaining</span>
                   </div>
                   <div className="text-xs font-bold text-cyan-300 mt-0.5">
                     {comp.remaining_useful_life_days ?? 45}d{" "}
@@ -178,7 +178,7 @@ export const ComponentHealthGrid: React.FC = () => {
                 <div className="bg-industrial-950/60 p-2 rounded-lg border border-industrial-800">
                   <div className="text-[10px] text-slate-500 uppercase flex items-center gap-1">
                     <AlertOctagon className="w-3 h-3 text-amber-400" />
-                    <span>Failure Probability</span>
+                    <span>Breakdown Risk</span>
                   </div>
                   <div className={`text-xs font-bold mt-0.5 ${(comp.failure_probability ?? 0) > 0.4 ? "text-red-400" : "text-slate-300"
                     }`}>

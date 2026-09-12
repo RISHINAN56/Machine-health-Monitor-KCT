@@ -112,13 +112,13 @@ export const AiPredictivePanel: React.FC = () => {
           </div>
           <div>
             <h3 className="font-hud text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <span>AI Predictive Maintenance</span>
+              <span>AI Maintenance Prediction</span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#00E5FF]/10 text-[#00E5FF] font-mono">
                 99.2% Acc
               </span>
             </h3>
             <span className="text-[10px] text-slate-400 font-mono">
-              IEC 60034 &bull; ISO 13374 Condition Engine
+              Continuous Machine Condition Monitor
             </span>
           </div>
         </div>
@@ -140,7 +140,7 @@ export const AiPredictivePanel: React.FC = () => {
         {/* Failure Probability */}
         <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
           <span className="text-[10px] text-slate-400 uppercase font-mono block">
-            Failure Probability
+            Breakdown Risk
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span
@@ -171,7 +171,7 @@ export const AiPredictivePanel: React.FC = () => {
         {/* Estimated Remaining Useful Life */}
         <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
           <span className="text-[10px] text-slate-400 uppercase font-mono block">
-            Remaining Life (RUL)
+            Time Until Replacement (RUL)
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span
@@ -213,7 +213,7 @@ export const AiPredictivePanel: React.FC = () => {
           </span>
         </div>
         <p className="text-[11px] text-slate-300 font-normal leading-relaxed">
-          <strong className="text-white font-semibold">Root Cause Analysis:</strong>{" "}
+          <strong className="text-white font-semibold">Identified Issue:</strong>{" "}
           {rootCauseAnalysis}
         </p>
       </div>
@@ -222,7 +222,7 @@ export const AiPredictivePanel: React.FC = () => {
       <div className="bg-[#050f1f]/80 p-3 rounded-xl border border-cyan-500/30 text-xs font-mono">
         <div className="flex items-center gap-1.5 text-[#00E5FF] font-hud text-[11px] uppercase tracking-wider font-bold mb-1">
           <Wrench className="w-3.5 h-3.5" />
-          <span>Prescriptive Recommendation</span>
+          <span>Recommended Action</span>
         </div>
         <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
           {recommendation}
@@ -242,12 +242,12 @@ export const AiPredictivePanel: React.FC = () => {
           {isDispatched ? (
             <>
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Work Order Dispatched to Field</span>
+              <span>Maintenance Task Created</span>
             </>
           ) : (
             <>
               <Send className="w-3.5 h-3.5" />
-              <span>Dispatch Prescriptive Work Order</span>
+              <span>Create Maintenance Task</span>
             </>
           )}
         </button>

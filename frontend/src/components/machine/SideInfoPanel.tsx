@@ -168,7 +168,7 @@ export const SideInfoPanel: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <Gauge className="w-4 h-4 text-[#00E5FF]" />
             <h3 className="font-hud text-xs font-bold text-slate-200 uppercase tracking-wider">
-              Live Sensor Telemetry
+              Live Sensor Readings
             </h3>
           </div>
           <span className="text-[10px] font-mono text-[#00FFC8] flex items-center gap-1">

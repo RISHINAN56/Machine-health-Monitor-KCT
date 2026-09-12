@@ -33,5 +33,6 @@ export const CAMERA_CONFIG = {
   maxDistance: 14.0,
   maxPolarAngle: Math.PI / 2 + 0.05,
   dampingFactor: 0.05,
-  orbitSpeed: 0.0035,
+  orbitSpeed: 0.005,
+  autoRotateSpeed: 1.4,
 };

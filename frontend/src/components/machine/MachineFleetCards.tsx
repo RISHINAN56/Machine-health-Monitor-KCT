@@ -51,7 +51,7 @@ export const MachineFleetCards: React.FC<MachineFleetCardsProps> = ({
         <div className="flex items-center gap-2">
           <Radio className="w-4 h-4 text-[#00E5FF] animate-pulse" />
           <h2 className="text-xs font-hud font-bold tracking-widest text-slate-200 uppercase flex items-center gap-2">
-            <span>Industry 4.0 Digital Twins</span>
+            <span>Connected Machines (3D View)</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 font-mono font-medium">
               3 Connected Looms
             </span>
@@ -59,7 +59,7 @@ export const MachineFleetCards: React.FC<MachineFleetCardsProps> = ({
         </div>
         <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-400">
           <span className="inline-block w-2 h-2 rounded-full bg-[#00FFC8] animate-ping" />
-          <span>Real-time Telemetry Active (2s sync)</span>
+          <span>Live Machine Data Active (2s sync)</span>
         </div>
       </div>
 
